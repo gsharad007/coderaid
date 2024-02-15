@@ -13,3 +13,19 @@ opt-level = 3
 
 [profile.dev]
 opt-level = 1
+
+[lints.rust]
+future-incompatible = "warn"
+rust-2024-compatibility = "warn"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
+restriction = "warn"
+nursery = "warn"
+cargo = "warn"
+separated_literal_suffix = "allow"
+implicit_return = "allow"
+bool_assert_comparison = "allow"
+suboptimal_flops = "allow"
+semicolon_outside_block = "allow"

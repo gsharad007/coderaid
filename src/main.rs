@@ -1,8 +1,8 @@
 use bevy::app::*;
+use bevy::DefaultPlugins;
 use bevy::prelude::*;
 use bevy::render::camera::OrthographicProjection;
 use bevy::utils::default;
-use bevy::DefaultPlugins;
 
 fn main() {
     App::new()
@@ -18,6 +18,7 @@ fn main() {
 
 #[derive(Debug)]
 pub struct CameraSetupPlugin;
+
 impl Plugin for CameraSetupPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ClearColor>()
@@ -35,13 +36,14 @@ fn setup_ortho_camera(mut commands: Commands) {
             // scaling_mode: ScalingMode::FixedVertical,
             ..default()
         }
-        .into(),
+            .into(),
         ..Default::default()
     });
 }
 
 #[derive(Debug)]
 pub struct SceneElementsPlugin;
+
 impl Plugin for SceneElementsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, create_scene);
@@ -61,7 +63,7 @@ fn create_scene(
     // });
 
     commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(4., 0., 4.)),
+        transform: Transform::from_translation(Vec3::new(4., 4., 4.)),
         point_light: PointLight {
             color: Color::RED,
             ..default()
@@ -70,7 +72,7 @@ fn create_scene(
     });
 
     commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(-4., 0., 4.)),
+        transform: Transform::from_translation(Vec3::new(-4., -4., 4.)),
         point_light: PointLight {
             color: Color::GREEN,
             ..default()
@@ -79,7 +81,7 @@ fn create_scene(
     });
 
     commands.spawn(PointLightBundle {
-transform: Transform::from_translation(Vec3::new(0., 4., 4.)),
+        transform: Transform::from_translation(Vec3::new(4., -4., 4.)),
         point_light: PointLight {
             color: Color::BLUE,
             ..default()

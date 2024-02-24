@@ -16,7 +16,7 @@ opt-level = 1
 
 [lints.rust]
 future-incompatible = "warn"
-rust-2024-compatibility = "warn"
+# rust-2024-compatibility = "warn"
 
 [lints.clippy]
 all = "warn"
@@ -29,3 +29,7 @@ implicit_return = "allow"
 bool_assert_comparison = "allow"
 suboptimal_flops = "allow"
 semicolon_outside_block = "allow"
+single-call-fn = "allow"
+
+# For Prototyping only
+missing-docs-in-private-items = "allow"

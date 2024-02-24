@@ -1,13 +1,14 @@
 use bevy::app::*;
-use bevy::DefaultPlugins;
+use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
-use bevy::render::camera::OrthographicProjection;
 use bevy::utils::default;
+use bevy::DefaultPlugins;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(CameraSetupPlugin)
+        .add_plugins(CameraControllerPlugin)
         .add_plugins(SceneElementsPlugin)
         // .insert_resource(WindowDescriptor {
         //     title: "CodeRaid".to_string(),
@@ -19,26 +20,218 @@ fn main() {
 #[derive(Debug)]
 pub struct CameraSetupPlugin;
 
-impl Plugin for CameraSetupPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<ClearColor>()
-            .add_systems(Startup, setup_ortho_camera);
+#[derive(Component)]
+pub struct CameraTarget {
+    pub target: Vec3,
+    pub look_from: Vec3,
+}
+
+impl Default for CameraTarget {
+    fn default() -> Self {
+        Self {
+            target: Vec3::ZERO,
+            look_from: Vec3::ONE,
+        }
     }
 }
 
-/// Sets up an orthographic camera with default parameters
-fn setup_ortho_camera(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(4., 3., 4.).looking_at(Vec3::ZERO, Vec3::Y),
-        projection: OrthographicProjection {
-            scale: 0.01,
-            // viewport_origin: WindowOrigin::Center,
-            // scaling_mode: ScalingMode::FixedVertical,
+impl Plugin for CameraSetupPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ClearColor>()
+            .add_systems(Startup, setup_perspective_camera_3d)
+            .add_systems(Update, update_camera_target);
+    }
+}
+
+// /// Sets up an orthographic camera with default parameters
+// fn setup_ortho_camera(mut commands: Commands) {
+//     commands.spawn((
+//         Camera3dBundle {
+//             transform: Transform::from_xyz(4., 3., 4.).looking_at(Vec3::ZERO, Vec3::Y),
+//             projection: OrthographicProjection {
+//                 scale: 0.01,
+//                 // viewport_origin: WindowOrigin::Center,
+//                 // scaling_mode: ScalingMode::FixedVertical,
+//                 ..default()
+//             }
+//             .into(),
+//             ..default()
+//         },
+//         CameraTarget {
+//             look_from: Vec3::splat(16.),
+//             ..default()
+//         },
+//     ));
+// }
+
+/// Sets up a perspective camera with default parameters
+fn setup_perspective_camera_3d(mut commands: Commands) {
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(10., 12., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+            projection: PerspectiveProjection::default().into(),
             ..default()
-        }
-            .into(),
-        ..Default::default()
-    });
+        },
+        CameraTarget {
+            look_from: Vec3::splat(16.),
+            ..default()
+        },
+    ));
+}
+
+/// Update the Camera using the CameraTarget
+fn update_camera_target(mut query: Query<(&mut Transform, &CameraTarget), With<Camera>>) {
+    for (mut transform, camera_target) in query.iter_mut() {
+        // let look_from = camera_target.look_from.normalize_or_zero() * camera_target.distance;
+        // camera_target.look_from = look_from;
+
+        let camera_locations = camera_target.target + camera_target.look_from;
+        let camera_looking_to = -camera_target.look_from;
+        let camera_up = Vec3::Y; // transform.up();
+        *transform =
+            Transform::from_translation(camera_locations).looking_to(camera_looking_to, camera_up);
+    }
+}
+
+#[derive(Debug)]
+pub struct CameraControllerPlugin;
+
+impl Plugin for CameraControllerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, (camera_panning_system, camera_orbiting_system));
+    }
+}
+
+const CAMERA_PANNING_SPEED: f32 = 10.;
+const CAMERA_ORBITING_SPEED: f32 = 10.;
+
+fn camera_panning_system(
+    time: Res<Time>,
+    keyboard_input: Res<Input<KeyCode>>,
+    // mut keyboard_events: EventReader<KeyboardInput>,
+    mouse_button_input: Res<Input<MouseButton>>,
+    mut mouse_motion_events: EventReader<MouseMotion>,
+    mut query: Query<(&mut CameraTarget, &Transform), With<Camera>>,
+) {
+    let translation = Vec2::ZERO;
+
+    // Keyboard control
+    // // This unfortunately falls under the system key repeat control causing the movement to be jerky (move + pause + move continuesly)
+    // let translation = keyboard_events
+    //     .read()
+    //     .filter_map(
+    //         |keyboard_input| match keyboard_input.state == ButtonState::Pressed {
+    //             true => Some(keyboard_input.key_code),
+    //             false => None,
+    //         },
+    //     )
+    //     .fold(Vec2::ZERO, |acc, key| {
+    //         acc + match key {
+    //             Some(KeyCode::W) => Vec2::new(0., 1.),
+    //             Some(KeyCode::S) => -Vec2::new(0., 1.),
+    //             Some(KeyCode::A) => -Vec2::new(1., 0.),
+    //             Some(KeyCode::D) => Vec2::new(1., 0.),
+    //             _ => Vec2::ZERO,
+    //         }
+    //     });
+    let translation = if !keyboard_input.pressed(KeyCode::ShiftLeft) {
+        keyboard_input.get_pressed().fold(translation, |acc, &key| {
+            acc + match key {
+                KeyCode::W => Vec2::new(0., 1.),
+                KeyCode::S => -Vec2::new(0., 1.),
+                KeyCode::A => -Vec2::new(1., 0.),
+                KeyCode::D => Vec2::new(1., 0.),
+                _ => Vec2::ZERO,
+            }
+        })
+    } else {
+        translation
+    };
+
+    // Mouse control
+    let translation = if mouse_button_input.pressed(MouseButton::Middle) {
+        mouse_motion_events
+            .read()
+            .fold(translation, |acc, &event| acc + event.delta)
+    } else {
+        translation
+    };
+
+    let translation = translation * CAMERA_PANNING_SPEED * time.delta_seconds();
+
+    for (mut camera_target, transform) in query.iter_mut() {
+        let translation_right = transform.right().xz().normalize_or_zero();
+        let translation_forward = transform
+            .forward()
+            .xz()
+            .try_normalize()
+            .unwrap_or(transform.up().xz().normalize_or_zero());
+        let viewspace_translation =
+            translation_right * translation.x + translation_forward * translation.y;
+        camera_target.target += Vec3::new(viewspace_translation.x, 0., viewspace_translation.y);
+    }
+}
+
+fn camera_orbiting_system(
+    time: Res<Time>,
+    keyboard_input: Res<Input<KeyCode>>,
+    mouse_button_input: Res<Input<MouseButton>>,
+    mut mouse_motion_events: EventReader<MouseMotion>,
+    mut query: Query<(&mut CameraTarget, &Transform), With<Camera>>,
+) {
+    let delta = Vec2::ZERO;
+
+    // Keyboard control
+    let delta = if keyboard_input.pressed(KeyCode::ShiftLeft) {
+        keyboard_input.get_pressed().fold(delta, |acc, &key| {
+            acc + match key {
+                KeyCode::W => Vec2::new(1., 0.),
+                KeyCode::S => -Vec2::new(1., 0.),
+                KeyCode::A => -Vec2::new(0., 1.),
+                KeyCode::D => Vec2::new(0., 1.),
+                _ => Vec2::ZERO,
+            }
+        })
+    } else {
+        delta
+    };
+
+    // Mouse control
+    let delta = if mouse_button_input.pressed(MouseButton::Right) {
+        mouse_motion_events
+            .read()
+            .fold(delta, |acc, &event| acc + event.delta)
+    } else {
+        delta
+    };
+
+    let delta = delta * CAMERA_ORBITING_SPEED * time.delta_seconds();
+    let pitch = delta.x;
+    let yaw = delta.y;
+
+    if yaw == pitch {
+        return;
+    }
+
+    for (mut target, transform) in query.iter_mut() {
+        let translation_right = transform.right().normalize_or_zero();
+        // let translation_forward = transform
+        //     .forward()
+        //     .xz()
+        //     .try_normalize()
+        //     .unwrap_or(transform.up().xz().normalize_or_zero());
+
+        let rotation = Quat::from_rotation_y(yaw).mul_quat(Quat::from_axis_angle(translation_right, pitch));
+
+        // println!(
+        //     "{:?} => {:?} ^{:?}",
+        //     target.look_from,
+        //     rotation.mul_vec3(target.look_from),
+        //     transform.up()
+        // );
+
+        target.look_from = rotation.mul_vec3(target.look_from);
+    }
 }
 
 #[derive(Debug)]
@@ -86,6 +279,21 @@ fn create_scene(
             color: Color::BLUE,
             ..default()
         },
+        ..Default::default()
+    });
+
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(
+            shape::Icosphere {
+                radius: 1.0,
+                // segments: 12,
+                ..default()
+            }
+            .try_into()
+            .unwrap(),
+        ),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        transform: Transform::from_translation(Vec3::ZERO),
         ..Default::default()
     });
 

@@ -1,4 +1,4 @@
-use bevy::app::*;
+use bevy::app::{App, Plugin, Startup, Update};
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
 use bevy::utils::default;
@@ -79,9 +79,9 @@ fn setup_perspective_camera_3d(mut commands: Commands) {
     ));
 }
 
-/// Update the Camera using the CameraTarget
+/// Update the Camera using the `CameraTarget`
 fn update_camera_target(mut query: Query<(&mut Transform, &CameraTarget), With<Camera>>) {
-    for (mut transform, camera_target) in query.iter_mut() {
+    for (mut transform, camera_target) in &mut query {
         // let look_from = camera_target.look_from.normalize_or_zero() * camera_target.distance;
         // camera_target.look_from = look_from;
 
@@ -159,7 +159,7 @@ fn camera_panning_system(
 
     let translation = translation * CAMERA_PANNING_SPEED * time.delta_seconds();
 
-    for (mut camera_target, transform) in query.iter_mut() {
+    for (mut camera_target, transform) in &mut query {
         let translation_right = transform.right().xz().normalize_or_zero();
         let translation_forward = transform
             .forward()
@@ -213,7 +213,7 @@ fn camera_orbiting_system(
         return;
     }
 
-    for (mut target, transform) in query.iter_mut() {
+    for (mut target, transform) in &mut query {
         let translation_right = transform.right().normalize_or_zero();
         // let translation_forward = transform
         //     .forward()
@@ -306,7 +306,7 @@ fn create_scene(
         Vec3::new(3., 0., 1.),
     ];
 
-    for pos in FLOOR_POSITIONS.iter() {
+    for pos in &FLOOR_POSITIONS {
         // Spawn floor plane mesh
         commands.spawn(PbrBundle {
             mesh: meshes.add(shape::Plane::from_size(1.).into()),
@@ -336,7 +336,7 @@ fn spawn_walls(
         Vec3::new(2., 1., 1.),
     ];
 
-    for pos in WALL_POSITIONS.iter() {
+    for pos in &WALL_POSITIONS {
         commands.spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
@@ -363,7 +363,7 @@ fn spawn_ceiling(
         material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
         transform: Transform::from_rotation(Quat::from_axis_angle(
             Vec3::X,
-            std::f32::consts::FRAC_PI_2,
+            core::f32::consts::FRAC_PI_2,
         )),
         ..Default::default()
     });

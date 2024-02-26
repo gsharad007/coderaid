@@ -25,14 +25,23 @@ pub struct CameraSetupPlugin;
 #[derive(Component)]
 pub struct CameraTarget {
     pub target: Vec3,
-    pub look_from: Vec3,
-    pub up: Vec3,
 }
 
 impl Default for CameraTarget {
     fn default() -> Self {
+        Self { target: Vec3::ZERO }
+    }
+}
+
+#[derive(Component)]
+pub struct CameraLooking {
+    pub look_from: Vec3,
+    pub up: Vec3,
+}
+
+impl Default for CameraLooking {
+    fn default() -> Self {
         Self {
-            target: Vec3::ZERO,
             look_from: Vec3::ONE,
             up: Vec3::Y,
         }
@@ -76,7 +85,8 @@ fn setup_perspective_camera_3d(mut commands: Commands) {
             projection: PerspectiveProjection::default().into(),
             ..default()
         },
-        CameraTarget {
+        CameraTarget::default(),
+        CameraLooking {
             look_from: Vec3::splat(16.),
             ..default()
         },
@@ -84,11 +94,13 @@ fn setup_perspective_camera_3d(mut commands: Commands) {
 }
 
 /// Update the Camera using the `CameraTarget`
-fn update_camera_target(mut query: Query<(&mut Transform, &CameraTarget), With<Camera>>) {
-    for (mut transform, camera_target) in &mut query {
-        let camera_locations = camera_target.target + camera_target.look_from;
-        let camera_looking_to = -camera_target.look_from;
-        let camera_up = camera_target.up;
+fn update_camera_target(
+    mut query: Query<(&mut Transform, &CameraTarget, &CameraLooking), With<Camera>>,
+) {
+    for (mut transform, camera_target, camera_looking) in &mut query {
+        let camera_locations = camera_target.target + camera_looking.look_from;
+        let camera_looking_to = -camera_looking.look_from;
+        let camera_up = camera_looking.up;
         *transform =
             Transform::from_translation(camera_locations).looking_to(camera_looking_to, camera_up);
     }
@@ -180,7 +192,7 @@ fn camera_orbiting_system(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
-    mut query: Query<(&mut CameraTarget, &Transform), With<Camera>>,
+    mut query: Query<(&mut CameraLooking, &Transform), With<Camera>>,
 ) {
     let delta = Vec2::ZERO;
 
@@ -212,14 +224,14 @@ fn camera_orbiting_system(
     let pitch = delta.x;
     let yaw = delta.y;
 
-    for (mut camera_target, transform) in &mut query {
+    for (mut camera_looking, transform) in &mut query {
         let translation_right = transform.right().normalize_or_zero();
 
         let rotation =
             Quat::from_rotation_y(yaw).mul_quat(Quat::from_axis_angle(translation_right, pitch));
 
-        camera_target.look_from = rotation.mul_vec3(camera_target.look_from);
-        camera_target.up = rotation.mul_vec3(camera_target.up);
+        camera_looking.look_from = rotation.mul_vec3(camera_looking.look_from);
+        camera_looking.up = rotation.mul_vec3(camera_looking.up);
     }
 }
 

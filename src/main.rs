@@ -1,3 +1,5 @@
+use core::f32::consts::FRAC_PI_2;
+
 use bevy::app::{App, Plugin, Startup, Update};
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
@@ -105,6 +107,7 @@ impl Plugin for CameraControllerPlugin {
 const CAMERA_PANNING_SPEED: f32 = 10.;
 const CAMERA_ORBITING_SPEED: f32 = 10.;
 
+#[allow(clippy::needless_pass_by_value)]
 fn camera_panning_system(
     time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -134,7 +137,9 @@ fn camera_panning_system(
     //             _ => Vec2::ZERO,
     //         }
     //     });
-    let translation = if !keyboard_input.pressed(KeyCode::ShiftLeft) {
+    let translation = if keyboard_input.pressed(KeyCode::ShiftLeft) {
+        translation
+    } else {
         keyboard_input.get_pressed().fold(translation, |acc, &key| {
             acc + match key {
                 KeyCode::W => Vec2::new(0., 1.),
@@ -144,8 +149,6 @@ fn camera_panning_system(
                 _ => Vec2::ZERO,
             }
         })
-    } else {
-        translation
     };
 
     // Mouse control
@@ -157,7 +160,7 @@ fn camera_panning_system(
         translation
     };
 
-    let translation = translation * CAMERA_PANNING_SPEED * time.delta_seconds();
+    let translation = translation * (CAMERA_PANNING_SPEED * time.delta_seconds());
 
     for (mut camera_target, transform) in &mut query {
         let translation_right = transform.right().xz().normalize_or_zero();
@@ -165,13 +168,14 @@ fn camera_panning_system(
             .forward()
             .xz()
             .try_normalize()
-            .unwrap_or(transform.up().xz().normalize_or_zero());
+            .unwrap_or_else(|| transform.up().xz().normalize_or_zero());
         let viewspace_translation =
-            translation_right * translation.x + translation_forward * translation.y;
+            (translation_right * translation.x) + (translation_forward * translation.y);
         camera_target.target += Vec3::new(viewspace_translation.x, 0., viewspace_translation.y);
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn camera_orbiting_system(
     time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -205,30 +209,15 @@ fn camera_orbiting_system(
         delta
     };
 
-    let delta = delta * CAMERA_ORBITING_SPEED * time.delta_seconds();
+    let delta = delta * (CAMERA_ORBITING_SPEED * time.delta_seconds());
     let pitch = delta.x;
     let yaw = delta.y;
 
-    if yaw == pitch {
-        return;
-    }
-
     for (mut target, transform) in &mut query {
         let translation_right = transform.right().normalize_or_zero();
-        // let translation_forward = transform
-        //     .forward()
-        //     .xz()
-        //     .try_normalize()
-        //     .unwrap_or(transform.up().xz().normalize_or_zero());
 
-        let rotation = Quat::from_rotation_y(yaw).mul_quat(Quat::from_axis_angle(translation_right, pitch));
-
-        // println!(
-        //     "{:?} => {:?} ^{:?}",
-        //     target.look_from,
-        //     rotation.mul_vec3(target.look_from),
-        //     transform.up()
-        // );
+        let rotation =
+            Quat::from_rotation_y(yaw).mul_quat(Quat::from_axis_angle(translation_right, pitch));
 
         target.look_from = rotation.mul_vec3(target.look_from);
     }
@@ -340,7 +329,7 @@ fn spawn_walls(
         commands.spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform: Transform::from_scale(Vec3::new(1., 2., 0.1) * Vec3::splat(0.9))
+            transform: Transform::from_scale(Vec3::new(1., 2., 0.1) * 0.9)
                 .with_translation(*pos),
             ..Default::default()
         });
@@ -363,7 +352,7 @@ fn spawn_ceiling(
         material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
         transform: Transform::from_rotation(Quat::from_axis_angle(
             Vec3::X,
-            core::f32::consts::FRAC_PI_2,
+            FRAC_PI_2,
         )),
         ..Default::default()
     });

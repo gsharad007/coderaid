@@ -21,15 +21,17 @@ future-incompatible = "warn"
 [lints.clippy]
 all = "warn"
 pedantic = "warn"
-restriction = "warn"
+# restriction = "warn"
 nursery = "warn"
-cargo = "warn"
-separated_literal_suffix = "allow"
-implicit_return = "allow"
-bool_assert_comparison = "allow"
-suboptimal_flops = "allow"
-semicolon_outside_block = "allow"
-single-call-fn = "allow"
+# cargo = "warn"
+# separated_literal_suffix = "allow"
+# implicit_return = "allow"
+# bool_assert_comparison = "allow"
+# suboptimal_flops = "allow"
+# semicolon_outside_block = "allow"
+# single_call_fn = { level = "allow", priority = 1 }  # restriction
+# implicit_return = { level = "allow", priority = 1 }  # restriction
+# arithmetic-side-effects = "allow"  # restriction
 
 # For Prototyping only
 missing-docs-in-private-items = "allow"

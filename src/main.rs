@@ -110,9 +110,9 @@ const CAMERA_ORBITING_SPEED: f32 = 10.;
 #[allow(clippy::needless_pass_by_value)]
 fn camera_panning_system(
     time: Res<Time>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     // mut keyboard_events: EventReader<KeyboardInput>,
-    mouse_button_input: Res<Input<MouseButton>>,
+    mouse_button_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut query: Query<(&mut CameraTarget, &Transform), With<Camera>>,
 ) {
@@ -142,10 +142,10 @@ fn camera_panning_system(
     } else {
         keyboard_input.get_pressed().fold(translation, |acc, &key| {
             acc + match key {
-                KeyCode::W => Vec2::new(0., 1.),
-                KeyCode::S => -Vec2::new(0., 1.),
-                KeyCode::A => -Vec2::new(1., 0.),
-                KeyCode::D => Vec2::new(1., 0.),
+                KeyCode::KeyW => Vec2::new(0., 1.),
+                KeyCode::KeyS => -Vec2::new(0., 1.),
+                KeyCode::KeyA => -Vec2::new(1., 0.),
+                KeyCode::KeyD => Vec2::new(1., 0.),
                 _ => Vec2::ZERO,
             }
         })
@@ -178,8 +178,8 @@ fn camera_panning_system(
 #[allow(clippy::needless_pass_by_value)]
 fn camera_orbiting_system(
     time: Res<Time>,
-    keyboard_input: Res<Input<KeyCode>>,
-    mouse_button_input: Res<Input<MouseButton>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mouse_button_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut query: Query<(&mut CameraTarget, &Transform), With<Camera>>,
 ) {
@@ -189,10 +189,10 @@ fn camera_orbiting_system(
     let delta = if keyboard_input.pressed(KeyCode::ShiftLeft) {
         keyboard_input.get_pressed().fold(delta, |acc, &key| {
             acc + match key {
-                KeyCode::W => Vec2::new(1., 0.),
-                KeyCode::S => -Vec2::new(1., 0.),
-                KeyCode::A => -Vec2::new(0., 1.),
-                KeyCode::D => Vec2::new(0., 1.),
+                KeyCode::KeyW => Vec2::new(1., 0.),
+                KeyCode::KeyS => -Vec2::new(1., 0.),
+                KeyCode::KeyA => -Vec2::new(0., 1.),
+                KeyCode::KeyD => Vec2::new(0., 1.),
                 _ => Vec2::ZERO,
             }
         })
@@ -272,16 +272,8 @@ fn create_scene(
     });
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(
-            shape::Icosphere {
-                radius: 1.0,
-                // segments: 12,
-                ..default()
-            }
-            .try_into()
-            .unwrap(),
-        ),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        mesh: meshes.add(Sphere::new(1.).mesh().ico(5).unwrap()),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
         transform: Transform::from_translation(Vec3::ZERO),
         ..Default::default()
     });
@@ -298,8 +290,8 @@ fn create_scene(
     for pos in &FLOOR_POSITIONS {
         // Spawn floor plane mesh
         commands.spawn(PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(1.).into()),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            mesh: meshes.add(Plane3d::default().mesh().size(1., 1.)),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             transform: Transform::from_translation(*pos).with_scale(Vec3::splat(0.9)),
             ..Default::default()
         });
@@ -327,10 +319,9 @@ fn spawn_walls(
 
     for pos in &WALL_POSITIONS {
         commands.spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform: Transform::from_scale(Vec3::new(1., 2., 0.1) * 0.9)
-                .with_translation(*pos),
+            mesh: meshes.add(Cuboid::new(1., 1., 1.)),
+material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+            transform: Transform::from_scale(Vec3::new(1., 2., 0.1) * 0.9).with_translation(*pos),
             ..Default::default()
         });
     }
@@ -343,17 +334,9 @@ fn spawn_ceiling(
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cylinder {
-            radius: 0.5,
-            height: 1.,
-            // segments: 12,
-            ..default()
-        })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-        transform: Transform::from_rotation(Quat::from_axis_angle(
-            Vec3::X,
-            FRAC_PI_2,
-        )),
+        mesh: meshes.add(Cylinder::new(0.5, 1.)),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+        transform: Transform::from_rotation(Quat::from_axis_angle(Vec3::X, FRAC_PI_2)),
         ..Default::default()
     });
 }

@@ -16,8 +16,8 @@ impl Plugin for CameraControllerPlugin {
     }
 }
 
-const CAMERA_PANNING_SPEED: f32 = 10.;
-const CAMERA_ORBITING_SPEED: f32 = 10.;
+const CAMERA_PANNING_SPEED: f32 = 8.;
+const CAMERA_ORBITING_SPEED: f32 = 4.;
 
 #[allow(clippy::needless_pass_by_value)]
 fn camera_panning_system(
@@ -65,9 +65,9 @@ fn camera_panning_system(
 
     // Mouse control
     let translation = if mouse_button_input.pressed(MouseButton::Middle) {
-        mouse_motion_events
-            .read()
-            .fold(translation, |acc, &event| acc + event.delta)
+        mouse_motion_events.read().fold(translation, |acc, &event| {
+            acc + Vec2::new(-event.delta.x, event.delta.y)
+        })
     } else {
         translation
     };
@@ -101,10 +101,10 @@ fn camera_orbiting_system(
     let delta = if keyboard_input.pressed(KeyCode::ShiftLeft) {
         keyboard_input.get_pressed().fold(delta, |acc, &key| {
             acc + match key {
-                KeyCode::KeyW => Vec2::new(1., 0.),
-                KeyCode::KeyS => -Vec2::new(1., 0.),
-                KeyCode::KeyA => -Vec2::new(0., 1.),
-                KeyCode::KeyD => Vec2::new(0., 1.),
+                KeyCode::KeyW => Vec2::new(0., 1.),
+                KeyCode::KeyS => -Vec2::new(0., 1.),
+                KeyCode::KeyA => -Vec2::new(1., 0.),
+                KeyCode::KeyD => Vec2::new(1., 0.),
                 _ => Vec2::ZERO,
             }
         })
@@ -114,22 +114,22 @@ fn camera_orbiting_system(
 
     // Mouse control
     let delta = if mouse_button_input.pressed(MouseButton::Right) {
-        mouse_motion_events
-            .read()
-            .fold(delta, |acc, &event| acc + event.delta)
+        mouse_motion_events.read().fold(delta, |acc, &event| {
+            acc + Vec2::new(-event.delta.x, event.delta.y)
+        })
     } else {
         delta
     };
 
     let delta = delta * (CAMERA_ORBITING_SPEED * time.delta_seconds());
-    let pitch = delta.x;
-    let yaw = delta.y;
+    let yaw = delta.x;
+    let pitch = delta.y;
 
     for (mut camera_looking, transform) in &mut query {
         let translation_right = transform.right().normalize_or_zero();
 
         let rotation =
-            Quat::from_rotation_y(yaw).mul_quat(Quat::from_axis_angle(translation_right, pitch));
+            Quat::from_rotation_y(yaw).mul_quat(Quat::from_axis_angle(translation_right, -pitch));
 
         camera_looking.look_from = rotation.mul_vec3(camera_looking.look_from);
         camera_looking.up = rotation.mul_vec3(camera_looking.up);

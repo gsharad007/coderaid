@@ -60,7 +60,12 @@ fn create_scene(
     });
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Sphere::new(1.).mesh().ico(5).unwrap()),
+        mesh: meshes.add(
+            Sphere::new(1.)
+                .mesh()
+                .ico(5)
+                .expect("Failed to create icosphere"),
+        ),
         material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
         transform: Transform::from_translation(Vec3::ZERO),
         ..Default::default()

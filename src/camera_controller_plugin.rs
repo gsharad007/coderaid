@@ -5,14 +5,56 @@ use bevy::{
     ecs::system::Res,
 };
 
-use crate::camera_setup_plugin::{CameraLooking, CameraTarget};
-
-#[derive(Debug)]
 pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (camera_panning_system, camera_orbiting_system));
+        app.add_systems(PostStartup, setup_panning_orbiting_camera);
+        app.add_systems(
+            Update,
+            (camera_panning_system, camera_orbiting_system).before(update_camera_target),
+        );
+        app.add_systems(Update, update_camera_target);
+    }
+}
+
+#[derive(Component, Debug)]
+pub struct CameraTarget {
+    pub target: Vec3,
+}
+
+impl Default for CameraTarget {
+    fn default() -> Self {
+        Self { target: Vec3::ZERO }
+    }
+}
+
+#[derive(Component, Debug)]
+pub struct CameraLooking {
+    pub look_from: Vec3,
+    pub up: Vec3,
+}
+
+impl Default for CameraLooking {
+    fn default() -> Self {
+        Self {
+            look_from: Vec3::ONE,
+            up: Vec3::Y,
+        }
+    }
+}
+
+/// Sets up a perspective camera with default parameters
+#[allow(clippy::needless_pass_by_value)]
+fn setup_panning_orbiting_camera(mut commands: Commands, query: Query<Entity, With<Camera>>) {
+    for camera_entity in &query {
+        commands.entity(camera_entity).insert((
+            CameraTarget::default(),
+            CameraLooking {
+                look_from: Vec3::splat(16.),
+                ..default()
+            },
+        ));
     }
 }
 
@@ -72,6 +114,10 @@ fn camera_panning_system(
         translation
     };
 
+    if translation == Vec2::ZERO {
+        return;
+    }
+
     let translation = translation * (CAMERA_PANNING_SPEED * time.delta_seconds());
 
     for (mut camera_target, transform) in &mut query {
@@ -121,6 +167,10 @@ fn camera_orbiting_system(
         delta
     };
 
+    if delta == Vec2::ZERO {
+        return;
+    }
+
     let delta = delta * (CAMERA_ORBITING_SPEED * time.delta_seconds());
     let yaw = delta.x;
     let pitch = delta.y;
@@ -133,5 +183,18 @@ fn camera_orbiting_system(
 
         camera_looking.look_from = rotation.mul_vec3(camera_looking.look_from);
         camera_looking.up = rotation.mul_vec3(camera_looking.up);
+    }
+}
+
+/// Update the Camera using the `CameraTarget`
+fn update_camera_target(
+    mut query: Query<(&mut Transform, &CameraTarget, &CameraLooking), With<Camera>>,
+) {
+    for (mut transform, camera_target, camera_looking) in &mut query {
+        let camera_locations = camera_target.target + camera_looking.look_from;
+        let camera_looking_to = -camera_looking.look_from;
+        let camera_up = camera_looking.up;
+        *transform =
+            Transform::from_translation(camera_locations).looking_to(camera_looking_to, camera_up);
     }
 }

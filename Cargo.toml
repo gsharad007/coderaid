@@ -32,6 +32,7 @@ nursery = "warn"
 # single_call_fn = { level = "allow", priority = 1 }  # restriction
 # implicit_return = { level = "allow", priority = 1 }  # restriction
 # arithmetic-side-effects = "allow"  # restriction
+unwrap-used = "warn"
 
 # For Prototyping only
 missing-docs-in-private-items = "allow"

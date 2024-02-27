@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.13.*"
+derive_more = "*"
+itertools = "*"
 
 [profile.dev.package."*"]
 opt-level = 3

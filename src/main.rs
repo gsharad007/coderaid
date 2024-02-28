@@ -2,6 +2,7 @@ mod camera_controller_plugin;
 mod camera_setup_plugin;
 
 mod game_scene_plugin;
+mod game_cells_plugin;
 
 use bevy::{app::App, DefaultPlugins};
 

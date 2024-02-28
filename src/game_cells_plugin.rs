@@ -1,7 +1,4 @@
-
-
 use bevy::prelude::*;
-
 
 use itertools::Itertools;
 
@@ -19,7 +16,7 @@ pub mod cell {
 
 #[derive(Component, Debug)]
 pub struct Cells {
-    pub cells: Vec<Vec<cell::Type>>,
+    pub array: Vec<Vec<cell::Type>>,
 }
 
 impl Cells {
@@ -28,39 +25,32 @@ impl Cells {
         let cells = map_string
             .lines()
             .filter(|line| !line.is_empty())
-            .map(|line| {
-                line.chars()
-                    .map(|c| -> cell::Type {
-                        match c {
-                            // '█' => cell::EMPTY,
-                            '╨' => cell::OPEN_TOP,
-                            '╥' => cell::OPEN_BOTTOM,
-                            '╞' => cell::OPEN_RIGHT,
-                            '╡' => cell::OPEN_LEFT,
-                            '║' => cell::OPEN_TOP | cell::OPEN_BOTTOM,
-                            '═' => cell::OPEN_LEFT | cell::OPEN_RIGHT,
-                            '╝' => cell::OPEN_TOP | cell::OPEN_LEFT,
-                            '╚' => cell::OPEN_TOP | cell::OPEN_RIGHT,
-                            '╗' => cell::OPEN_BOTTOM | cell::OPEN_LEFT,
-                            '╔' => cell::OPEN_BOTTOM | cell::OPEN_RIGHT,
-                            '╠' => cell::OPEN_TOP | cell::OPEN_BOTTOM | cell::OPEN_RIGHT,
-                            '╣' => cell::OPEN_TOP | cell::OPEN_BOTTOM | cell::OPEN_LEFT,
-                            '╩' => cell::OPEN_TOP | cell::OPEN_LEFT | cell::OPEN_RIGHT,
-                            '╦' => cell::OPEN_BOTTOM | cell::OPEN_LEFT | cell::OPEN_RIGHT,
-                            '╬' => {
-                                cell::OPEN_TOP
-                                    | cell::OPEN_LEFT
-                                    | cell::OPEN_RIGHT
-                                    | cell::OPEN_BOTTOM
-                            }
-                            _ => cell::EMPTY,
-                        }
-                    })
-                    .collect_vec()
-            })
+            .map(|line| line.chars().map(cell_char_to_cell_type).collect_vec())
             .collect_vec();
 
-        Self { cells }
+        Self { array: cells }
+    }
+}
+
+const fn cell_char_to_cell_type(c: char) -> cell::Type {
+    match c {
+        // '█' => cell::EMPTY,
+        '╨' => cell::OPEN_TOP,
+        '╥' => cell::OPEN_BOTTOM,
+        '╞' => cell::OPEN_RIGHT,
+        '╡' => cell::OPEN_LEFT,
+        '║' => cell::OPEN_TOP | cell::OPEN_BOTTOM,
+        '═' => cell::OPEN_LEFT | cell::OPEN_RIGHT,
+        '╝' => cell::OPEN_TOP | cell::OPEN_LEFT,
+        '╚' => cell::OPEN_TOP | cell::OPEN_RIGHT,
+        '╗' => cell::OPEN_BOTTOM | cell::OPEN_LEFT,
+        '╔' => cell::OPEN_BOTTOM | cell::OPEN_RIGHT,
+        '╠' => cell::OPEN_TOP | cell::OPEN_BOTTOM | cell::OPEN_RIGHT,
+        '╣' => cell::OPEN_TOP | cell::OPEN_BOTTOM | cell::OPEN_LEFT,
+        '╩' => cell::OPEN_TOP | cell::OPEN_LEFT | cell::OPEN_RIGHT,
+        '╦' => cell::OPEN_BOTTOM | cell::OPEN_LEFT | cell::OPEN_RIGHT,
+        '╬' => cell::OPEN_TOP | cell::OPEN_LEFT | cell::OPEN_RIGHT | cell::OPEN_BOTTOM,
+        _ => cell::EMPTY,
     }
 }
 
@@ -78,42 +68,54 @@ mod test_map_load_string {
 ╞═╩╝
 ";
 
-        let map = Cells::from_string(map_string);
+        let cells = Cells::from_string(map_string);
 
         // println!("{}", map_string);
         // println!("{:?}", map.cells);
 
-        assert_eq!(map.cells[0][0], cell::OPEN_RIGHT);
-        assert_eq!(map.cells[0][1], cell::OPEN_LEFT | cell::OPEN_RIGHT);
+        // ╞═╦╗
         assert_eq!(
-            map.cells[0][2],
-            cell::OPEN_LEFT | cell::OPEN_RIGHT | cell::OPEN_BOTTOM
-        );
-        assert_eq!(map.cells[0][3], cell::OPEN_LEFT | cell::OPEN_BOTTOM);
-
-        assert_eq!(map.cells[1][0], cell::OPEN_RIGHT);
-        assert_eq!(map.cells[1][1], cell::OPEN_LEFT | cell::OPEN_RIGHT);
-        assert_eq!(
-            map.cells[1][2],
-            cell::OPEN_LEFT | cell::OPEN_RIGHT | cell::OPEN_BOTTOM | cell::OPEN_TOP
-        );
-        assert_eq!(
-            map.cells[1][3],
-            cell::OPEN_LEFT | cell::OPEN_BOTTOM | cell::OPEN_TOP
+            cells.array[0],
+            [
+                cell::OPEN_RIGHT,
+                cell::OPEN_LEFT | cell::OPEN_RIGHT,
+                cell::OPEN_LEFT | cell::OPEN_RIGHT | cell::OPEN_BOTTOM,
+                cell::OPEN_LEFT | cell::OPEN_BOTTOM
+            ]
         );
 
-        assert_eq!(map.cells[2][0], cell::EMPTY);
-        assert_eq!(map.cells[2][1], cell::EMPTY);
-        assert_eq!(map.cells[2][2], cell::OPEN_TOP | cell::OPEN_BOTTOM);
-        assert_eq!(map.cells[2][3], cell::OPEN_TOP | cell::OPEN_BOTTOM);
-
-        assert_eq!(map.cells[3][0], cell::OPEN_RIGHT);
-        assert_eq!(map.cells[3][1], cell::OPEN_LEFT | cell::OPEN_RIGHT);
+        // ╞═╬╣
         assert_eq!(
-            map.cells[3][2],
-            cell::OPEN_LEFT | cell::OPEN_RIGHT | cell::OPEN_TOP
+            cells.array[1],
+            [
+                cell::OPEN_RIGHT,
+                cell::OPEN_LEFT | cell::OPEN_RIGHT,
+                cell::OPEN_LEFT | cell::OPEN_RIGHT | cell::OPEN_BOTTOM | cell::OPEN_TOP,
+                cell::OPEN_LEFT | cell::OPEN_BOTTOM | cell::OPEN_TOP
+            ]
         );
-        assert_eq!(map.cells[3][3], cell::OPEN_LEFT | cell::OPEN_TOP);
+
+        // ██║║
+        assert_eq!(
+            cells.array[2],
+            [
+                cell::EMPTY,
+                cell::EMPTY,
+                cell::OPEN_TOP | cell::OPEN_BOTTOM,
+                cell::OPEN_TOP | cell::OPEN_BOTTOM
+            ]
+        );
+
+        // ╞═╩╝
+        assert_eq!(
+            cells.array[3],
+            [
+                cell::OPEN_RIGHT,
+                cell::OPEN_LEFT | cell::OPEN_RIGHT,
+                cell::OPEN_LEFT | cell::OPEN_RIGHT | cell::OPEN_TOP,
+                cell::OPEN_LEFT | cell::OPEN_TOP
+            ]
+        );
     }
 
     #[allow(clippy::too_many_lines)]
@@ -131,14 +133,14 @@ mod test_map_load_string {
 ████╔╗██
 ";
 
-        let map = Cells::from_string(map_string);
+        let cells = Cells::from_string(map_string);
 
         // println!("{}", map_string);
         // println!("{:?}", map.cells);
 
         // ╞═╦╗╔╦╩╡
         assert_eq!(
-            map.cells[0],
+            cells.array[0],
             [
                 cell::OPEN_RIGHT,
                 cell::OPEN_RIGHT | cell::OPEN_LEFT,
@@ -153,7 +155,7 @@ mod test_map_load_string {
 
         // ╞═╬╣╠╬╦╡
         assert_eq!(
-            map.cells[1],
+            cells.array[1],
             [
                 cell::OPEN_RIGHT,
                 cell::OPEN_RIGHT | cell::OPEN_LEFT,
@@ -168,7 +170,7 @@ mod test_map_load_string {
 
         // ██║║╠╣║█
         assert_eq!(
-            map.cells[2],
+            cells.array[2],
             [
                 cell::EMPTY,
                 cell::EMPTY,
@@ -183,7 +185,7 @@ mod test_map_load_string {
 
         // ╞═╩╝╠╣║█
         assert_eq!(
-            map.cells[3],
+            cells.array[3],
             [
                 cell::OPEN_RIGHT,
                 cell::OPEN_RIGHT | cell::OPEN_LEFT,
@@ -198,7 +200,7 @@ mod test_map_load_string {
 
         // ╔╗╔╗╚╝║█
         assert_eq!(
-            map.cells[4],
+            cells.array[4],
             [
                 cell::OPEN_BOTTOM | cell::OPEN_RIGHT,
                 cell::OPEN_BOTTOM | cell::OPEN_LEFT,
@@ -213,7 +215,7 @@ mod test_map_load_string {
 
         // ╝╚╝╚╗╔╝█
         assert_eq!(
-            map.cells[5],
+            cells.array[5],
             [
                 cell::OPEN_TOP | cell::OPEN_LEFT,
                 cell::OPEN_TOP | cell::OPEN_RIGHT,
@@ -228,7 +230,7 @@ mod test_map_load_string {
 
         // ████╚╝██
         assert_eq!(
-            map.cells[6],
+            cells.array[6],
             [
                 cell::EMPTY,
                 cell::EMPTY,
@@ -243,7 +245,7 @@ mod test_map_load_string {
 
         // ████╔╗██
         assert_eq!(
-            map.cells[7],
+            cells.array[7],
             [
                 cell::EMPTY,
                 cell::EMPTY,

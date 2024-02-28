@@ -35,6 +35,7 @@ nursery = "warn"
 # implicit_return = { level = "allow", priority = 1 }  # restriction
 # arithmetic-side-effects = "allow"  # restriction
 unwrap-used = "warn"
+non_ascii_literal = "warn"
 
 # For Prototyping only
 missing-docs-in-private-items = "allow"

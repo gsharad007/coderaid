@@ -3,15 +3,17 @@ use bevy::prelude::*;
 use itertools::Itertools;
 
 pub mod cell {
-    // #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, BitOr)]
-    // pub struct Type(u8);
-    pub type Type = u8;
+    use derive_more::BitOr;
 
-    pub const EMPTY: Type = 0b0;
-    pub const OPEN_TOP: Type = 0b1;
-    pub const OPEN_BOTTOM: Type = 0b10;
-    pub const OPEN_LEFT: Type = 0b100;
-    pub const OPEN_RIGHT: Type = 0b1000;
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, BitOr)]
+    pub struct Type(u8);
+    // pub type Type = u8;
+
+    pub const EMPTY: Type = Type(0b0);
+    pub const OPEN_TOP: Type = Type(0b1);
+    pub const OPEN_BOTTOM: Type = Type(0b10);
+    pub const OPEN_LEFT: Type = Type(0b100);
+    pub const OPEN_RIGHT: Type = Type(0b1000);
 }
 
 #[derive(Component, Debug)]
@@ -20,7 +22,6 @@ pub struct Cells {
 }
 
 impl Cells {
-    #[allow(clippy::non_ascii_literal)]
     pub fn from_string(map_string: &str) -> Self {
         let cells = map_string
             .lines()
@@ -32,7 +33,8 @@ impl Cells {
     }
 }
 
-const fn cell_char_to_cell_type(c: char) -> cell::Type {
+#[allow(clippy::non_ascii_literal)]
+fn cell_char_to_cell_type(c: char) -> cell::Type {
     match c {
         // '█' => cell::EMPTY,
         '╨' => cell::OPEN_TOP,

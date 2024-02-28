@@ -1,15 +1,7 @@
-use core::f32::consts::FRAC_PI_2;
+
 
 use bevy::prelude::*;
-use bevy::{
-    app::{App, Plugin, Startup},
-    asset::Assets,
-    ecs::system::{Commands, ResMut},
-    math::Vec3,
-    pbr::{PbrBundle, PointLight, PointLightBundle, StandardMaterial},
-    render::{color::Color, mesh::Mesh},
-    transform::components::Transform,
-};
+
 
 use itertools::Itertools;
 

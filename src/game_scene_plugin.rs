@@ -11,7 +11,7 @@ use bevy::{
     transform::components::Transform,
 };
 
-use itertools::Itertools;
+
 
 #[derive(Debug)]
 pub struct SceneElementsPlugin;

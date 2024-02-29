@@ -3,9 +3,9 @@ use bevy::prelude::*;
 use itertools::Itertools;
 
 pub mod cell {
-    use derive_more::BitOr;
+    use derive_more::{BitAnd, BitOr};
 
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, BitOr)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, BitOr, BitAnd, PartialOrd, Ord)]
     pub struct Type(u8);
     // pub type Type = u8;
 

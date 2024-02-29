@@ -11,6 +11,9 @@ use bevy::{
     transform::components::Transform,
 };
 
+use crate::game_cells_plugin::cell;
+use crate::game_cells_plugin::Cells;
+
 #[derive(Debug)]
 pub struct SceneElementsPlugin;
 
@@ -27,10 +30,14 @@ fn create_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Add lighting
-    // commands.spawn(PointLightBundle {
-    //     transform: Transform::from_translation(Vec3::new(0., 0., 4.)),
-    //     ..Default::default()
-    // });
+    commands.spawn(PointLightBundle {
+        transform: Transform::from_translation(Vec3::new(0., 10., 0.)),
+        point_light: PointLight {
+            color: Color::WHITE,
+            ..default()
+        },
+        ..default()
+    });
 
     commands.spawn(PointLightBundle {
         transform: Transform::from_translation(Vec3::new(4., 4., 4.)),
@@ -38,98 +45,192 @@ fn create_scene(
             color: Color::RED,
             ..default()
         },
-        ..Default::default()
+        ..default()
     });
 
     commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(-4., -4., 4.)),
+        transform: Transform::from_translation(Vec3::new(-4., 4., 4.)),
         point_light: PointLight {
             color: Color::GREEN,
             ..default()
         },
-        ..Default::default()
+        ..default()
     });
 
     commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(4., -4., 4.)),
+        transform: Transform::from_translation(Vec3::new(4., 4., -4.)),
         point_light: PointLight {
             color: Color::BLUE,
             ..default()
         },
-        ..Default::default()
+        ..default()
     });
 
     commands.spawn(PbrBundle {
         mesh: meshes.add(
-            Sphere::new(1.)
+            Sphere::new(0.125)
                 .mesh()
-                .ico(5)
+                .ico(2)
                 .expect("Failed to create icosphere"),
         ),
         material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
         transform: Transform::from_translation(Vec3::ZERO),
-        ..Default::default()
+        ..default()
     });
 
-    const FLOOR_POSITIONS: [Vec3; 6] = [
-        Vec3::new(0., 0., 1.),
-        Vec3::new(-1., 0., 1.),
-        Vec3::new(-2., 0., 1.),
-        Vec3::new(1., 0., 1.),
-        Vec3::new(2., 0., 1.),
-        Vec3::new(3., 0., 1.),
-    ];
-
-    for pos in &FLOOR_POSITIONS {
-        // Spawn floor plane mesh
-        commands.spawn(PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(1., 1.)),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
-            transform: Transform::from_translation(*pos).with_scale(Vec3::splat(0.9)),
-            ..Default::default()
-        });
-    }
-
-    // Spawn walls and roof meshes
-    spawn_walls(&mut commands, &mut meshes, &mut materials);
-    spawn_ceiling(&mut commands, &mut meshes, &mut materials);
+    spawn_map_cells(&mut commands, &mut meshes, &mut materials);
 }
 
-/// Spawns four walls around the room
-fn spawn_walls(
+fn spawn_empty(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    pos: Vec3,
 ) {
-    const WALL_POSITIONS: [Vec3; 6] = [
-        Vec3::new(0., 1., 0.),
-        Vec3::new(-1., 1., 0.),
-        Vec3::new(-2., 1., 0.),
-        Vec3::new(0., 1., 1.),
-        Vec3::new(1., 1., 1.),
-        Vec3::new(2., 1., 1.),
-    ];
-
-    for pos in &WALL_POSITIONS {
-        commands.spawn(PbrBundle {
-            mesh: meshes.add(Cuboid::new(1., 1., 1.)),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
-            transform: Transform::from_scale(Vec3::new(1., 2., 0.1) * 0.9).with_translation(*pos),
-            ..Default::default()
-        });
-    }
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Cuboid::from_size(Vec3::ONE * 0.9)),
+        material: materials.add(Color::rgb(0.2, 0.1, 0.0)),
+        transform: Transform::from_translation(pos + Vec3::new(0., 0.5, 0.)),
+        ..default()
+    });
 }
 
-/// Spawns a cylindrical ceiling above the room
+fn spawn_floor(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    pos: Vec3,
+) {
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Cuboid::from_size(Vec3::new(1., 0.01, 1.) * 0.9)),
+        material: materials.add(Color::rgb(0.7, 0.7, 0.7)),
+        transform: Transform::from_translation(pos),
+        ..default()
+    });
+}
+
 fn spawn_ceiling(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    pos: Vec3,
 ) {
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Cylinder::new(0.5, 1.)),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
-        transform: Transform::from_rotation(Quat::from_axis_angle(Vec3::X, FRAC_PI_2)),
-        ..Default::default()
+        mesh: meshes.add(Cuboid::from_size(Vec3::new(1., 0.01, 1.) * 0.2)),
+        material: materials.add(Color::rgb(0.9, 0.9, 0.9)),
+        transform: Transform::from_translation(pos + Vec3::new(0., 1., 0.)),
+        ..default()
     });
+}
+
+fn spawn_wall(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    pos: Vec3,
+    angle: f32,
+) {
+    let rotation = Quat::from_rotation_y(angle);
+    let offset = rotation.mul_vec3(Vec3::new(0., 0.5, -0.5) * 0.9);
+
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Cuboid::from_size(Vec3::new(1., 1., 0.1) * 0.9)),
+        material: materials.add(Color::rgb(0.9, 0.9, 0.9)),
+        transform: Transform::from_translation(pos + offset).with_rotation(rotation),
+        ..default()
+    });
+}
+
+fn spawn_wall_top(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    pos: Vec3,
+) {
+    spawn_wall(commands, meshes, materials, pos, 0.);
+}
+
+fn spawn_wall_bottom(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    pos: Vec3,
+) {
+    spawn_wall(commands, meshes, materials, pos, -2. * FRAC_PI_2);
+}
+
+fn spawn_wall_right(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    pos: Vec3,
+) {
+    spawn_wall(commands, meshes, materials, pos, -1. * FRAC_PI_2);
+}
+
+fn spawn_wall_left(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    pos: Vec3,
+) {
+    spawn_wall(commands, meshes, materials, pos, -3. * FRAC_PI_2);
+}
+
+#[allow(clippy::cast_precision_loss)]
+fn spawn_map_cells(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
+    #[allow(clippy::non_ascii_literal)]
+    let cells_string = "
+╞═╦╗╔╦╩╡
+╞═╬╣╠╬╦╡
+██║║╠╣║█
+╞═╩╝╠╣║█
+╔╗╔╗╚╝║█
+╝╚╝╚╗╔╝█
+████╚╝██
+████╔╗██
+";
+
+    let cells = Cells::from_string(cells_string);
+
+    let x_offset = (-0.5f32).mul_add(
+        cells
+            .array
+            .iter()
+            .map(std::vec::Vec::len)
+            .max()
+            .unwrap_or_default() as f32,
+        0.5,
+    );
+    let z_offset: f32 = (-0.5f32).mul_add(cells.array.len() as f32, 0.5);
+
+    for (z, row) in cells.array.iter().enumerate() {
+        for (x, cell_type) in row.iter().enumerate() {
+            let pos = Vec3::new(x_offset + x as f32, 0., z_offset + z as f32);
+
+            let cell_type = *cell_type;
+            if cell_type == cell::EMPTY {
+                spawn_empty(commands, meshes, materials, pos);
+            } else {
+                spawn_floor(commands, meshes, materials, pos);
+                spawn_ceiling(commands, meshes, materials, pos);
+                if cell_type & cell::OPEN_TOP != cell::OPEN_TOP {
+                    spawn_wall_top(commands, meshes, materials, pos);
+                }
+                if cell_type & cell::OPEN_BOTTOM != cell::OPEN_BOTTOM {
+                    spawn_wall_bottom(commands, meshes, materials, pos);
+                }
+                if cell_type & cell::OPEN_LEFT != cell::OPEN_LEFT {
+                    spawn_wall_left(commands, meshes, materials, pos);
+                }
+                if cell_type & cell::OPEN_RIGHT != cell::OPEN_RIGHT {
+                    spawn_wall_right(commands, meshes, materials, pos);
+                }
+            }
+        }
+    }
 }

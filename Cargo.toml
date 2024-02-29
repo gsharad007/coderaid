@@ -36,6 +36,9 @@ nursery = "warn"
 # arithmetic-side-effects = "allow"  # restriction
 unwrap-used = "warn"
 non_ascii_literal = "warn"
+indexing_slicing = "warn"
+redundant_type_annotations = "warn"
+absolute-paths = "warn"
 
 # For Prototyping only
 missing-docs-in-private-items = "allow"

@@ -34,8 +34,8 @@ impl Cells {
 }
 
 #[allow(clippy::non_ascii_literal)]
-fn cell_char_to_cell_type(c: char) -> cell::Type {
-    match c {
+fn cell_char_to_cell_type(cell_char: char) -> cell::Type {
+    match cell_char {
         // '█' => cell::EMPTY,
         '╨' => cell::OPEN_TOP,
         '╥' => cell::OPEN_BOTTOM,
@@ -60,6 +60,7 @@ fn cell_char_to_cell_type(c: char) -> cell::Type {
 mod test_map_load_string {
     use super::*;
 
+    #[allow(clippy::indexing_slicing)]
     #[test]
     fn test_map_load_string_4x4() {
         #[allow(clippy::non_ascii_literal)]
@@ -120,6 +121,7 @@ mod test_map_load_string {
         );
     }
 
+    #[allow(clippy::indexing_slicing)]
     #[allow(clippy::too_many_lines)]
     #[test]
     fn test_map_load_string_8x8() {

@@ -201,18 +201,17 @@ fn spawn_map_cells(
         cells
             .array
             .iter()
-            .map(std::vec::Vec::len)
+            .map(Vec::len)
             .max()
             .unwrap_or_default() as f32,
         0.5,
     );
-    let z_offset: f32 = (-0.5f32).mul_add(cells.array.len() as f32, 0.5);
+    let z_offset = (-0.5f32).mul_add(cells.array.len() as f32, 0.5);
 
     for (z, row) in cells.array.iter().enumerate() {
-        for (x, cell_type) in row.iter().enumerate() {
+        for (x, &cell_type) in row.iter().enumerate() {
             let pos = Vec3::new(x_offset + x as f32, 0., z_offset + z as f32);
 
-            let cell_type = *cell_type;
             if cell_type == cell::EMPTY {
                 spawn_empty(commands, meshes, materials, pos);
             } else {

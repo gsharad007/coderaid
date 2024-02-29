@@ -20,3 +20,6 @@ target/
 
 # ignore .idea intelliJ folder
 .idea/
+
+#ignore .vscode folder
+.vscode/

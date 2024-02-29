@@ -7,6 +7,9 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.13.*"
+rand_core = "0.6"
+bevy_rand = "0.5"
+bevy_prng = { version = "0.5", features = ["wyrand"] }
 derive_more = "*"
 itertools = "*"
 

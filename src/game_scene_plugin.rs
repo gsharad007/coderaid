@@ -229,8 +229,8 @@ fn spawn_map_cells(
 
     let cells = Cells::from_string(cells_string);
 
-    let x_offset = (-0.5f32).mul_add(cells.x as f32, 0.);
-    let z_offset = (-0.5f32).mul_add(cells.z as f32, 0.);
+    let x_offset = (-0.5_f32).mul_add(cells.x as f32, 0.);
+    let z_offset = (-0.5_f32).mul_add(cells.z as f32, 0.);
 
     for (z, row) in cells.array.iter().enumerate() {
         for (x, &cell_type) in row.iter().enumerate() {

@@ -19,9 +19,17 @@ pub mod cell {
 #[derive(Component, Debug)]
 pub struct Cells {
     pub array: Vec<Vec<cell::Type>>,
+    pub x: u32,
+    pub y: u32,
+    pub z: u32,
 }
 
 impl Cells {
+    fn new(array: Vec<Vec<cell::Type>>, x: u32, y: u32, z: u32) -> Self {
+        Self { array, x, y, z }
+    }
+
+    #[allow(clippy::cast_possible_truncation)]
     pub fn from_string(map_string: &str) -> Self {
         let cells = map_string
             .lines()
@@ -29,7 +37,10 @@ impl Cells {
             .map(|line| line.chars().map(cell_char_to_cell_type).collect_vec())
             .collect_vec();
 
-        Self { array: cells }
+        let x = cells.iter().map(Vec::len).max().unwrap_or_default();
+        let z = cells.len();
+
+        Self::new(cells, x as u32, 1, z as u32)
     }
 }
 

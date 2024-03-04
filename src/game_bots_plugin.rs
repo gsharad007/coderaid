@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy_prng::WyRand;
 use bevy_rand::resource::GlobalEntropy;
@@ -44,36 +46,65 @@ fn bots_startup() {
     // Setup your game world, camera, etc.
 }
 
-#[allow(clippy::cast_precision_loss)]
 #[allow(clippy::needless_pass_by_value)]
 fn bots_spawning_system(
     time: Res<Time>,
-    mut commands: Commands,
-    mut bot_spawner_timer: ResMut<BotSpawnerTimer>,
-    mut bot_spawned_writer: EventWriter<BotSpawnedEvent>,
-    mut rng: ResMut<GlobalEntropy<WyRand>>,
+    commands: Commands,
+    bot_spawner_timer: ResMut<BotSpawnerTimer>,
+    bot_spawned_writer: EventWriter<BotSpawnedEvent>,
+    rng: ResMut<GlobalEntropy<WyRand>>,
 ) {
     // Update the timer with the time elapsed since the last update
-    if bot_spawner_timer.0.tick(time.delta()).just_finished() {
+    if bot_spawner_timer_just_finishes(time.delta(), bot_spawner_timer) {
         // Timer has finished, so spawn a new bot
-
-        let transfrom = Transform::from_xyz(
-            (rng.next_u32() % 16) as f32 - 5.,
-            0.1,
-            (rng.next_u32() % 16) as f32 - 5.,
-        );
-        let bot_entity = commands.spawn((Bot {}, transfrom)).id();
-
-        bot_spawned_writer.send(BotSpawnedEvent {
-            entity: bot_entity,
-            transform: transfrom,
-        });
+        spawn_bot_on_map_trigger_event(rng, commands, bot_spawned_writer);
     }
+}
+
+fn bot_spawner_timer_just_finishes(
+    time_delta: Duration,
+    mut bot_spawner_timer: ResMut<BotSpawnerTimer>,
+) -> bool {
+    bot_spawner_timer.0.tick(time_delta).just_finished()
+}
+
+fn spawn_bot_on_map_trigger_event(
+    rng: ResMut<GlobalEntropy<WyRand>>,
+    commands: Commands,
+    mut bot_spawned_writer: EventWriter<BotSpawnedEvent>,
+) {
+    let (transfrom, bot_entity) = spawn_bot_on_map(commands, rng);
+
+    bot_spawned_writer.send(BotSpawnedEvent {
+        entity: bot_entity,
+        transform: transfrom,
+    });
+}
+
+#[allow(clippy::cast_precision_loss)]
+fn spawn_bot_on_map(
+    commands: Commands,
+    mut rng: ResMut<GlobalEntropy<WyRand>>,
+) -> (Transform, Entity) {
+    let transfrom = Transform::from_xyz(
+        (rng.next_u32() % 16) as f32 - 5.,
+        0.0,
+        (rng.next_u32() % 16) as f32 - 5.,
+    );
+    let bot_entity = spawn_bot_with_transform(commands, transfrom);
+    (transfrom, bot_entity)
+}
+
+fn spawn_bot_with_transform(mut commands: Commands, transfrom: Transform) -> Entity {
+    let bot_entity = commands
+        .spawn((Bot {}, TransformBundle::from(transfrom)))
+        .id();
+    bot_entity
 }
 
 #[allow(clippy::needless_pass_by_value)]
 fn bots_movement_system(time: Res<Time>, mut query: Query<&mut Transform, With<Bot>>) {
-    for mut transform in query.iter_mut() {
+    for mut transform in &mut query {
         let move_delta = transform.forward() * BOT_MOVEMENT_SPEED * time.delta_seconds();
         transform.translation += move_delta;
     }

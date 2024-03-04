@@ -1,12 +1,13 @@
 use core::f32::consts::FRAC_PI_2;
 
+use bevy::pbr::light_consts::lumens;
 use bevy::prelude::*;
 use bevy::{
     app::{App, Plugin, Startup},
     asset::Assets,
     ecs::system::{Commands, ResMut},
     math::Vec3,
-    pbr::{PbrBundle, PointLight, PointLightBundle, StandardMaterial},
+    pbr::{light_consts::lux, PbrBundle, PointLight, PointLightBundle, StandardMaterial},
     render::{color::Color, mesh::Mesh},
     transform::components::Transform,
 };
@@ -30,37 +31,57 @@ fn create_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Add lighting
-    commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(0., 10., 0.)),
-        point_light: PointLight {
-            color: Color::WHITE,
+    // Sun
+    commands.spawn(DirectionalLightBundle {
+        transform: Transform::from_translation(Vec3::new(10., 50., 10.)),
+        directional_light: DirectionalLight {
+            color: Color::YELLOW,
+            illuminance: lux::DIRECT_SUNLIGHT,
+            shadows_enabled: true,
+            ..default()
+        },
+        ..default()
+    });
+
+    // Skylight
+    commands.spawn(DirectionalLightBundle {
+        transform: Transform::from_translation(Vec3::new(-10., 50., -10.)),
+        directional_light: DirectionalLight {
+            color: Color::ALICE_BLUE,
+            illuminance: lux::FULL_DAYLIGHT,
             ..default()
         },
         ..default()
     });
 
     commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(4., 4., 4.)),
+        transform: Transform::from_translation(Vec3::new(8., 8., 8.)),
         point_light: PointLight {
             color: Color::RED,
+            range: 64.,
+            // intensity: lumens::LUMENS_PER_LED_WATTS * 100.,
             ..default()
         },
         ..default()
     });
 
     commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(-4., 4., 4.)),
+        transform: Transform::from_translation(Vec3::new(-8., 8., 8.)),
         point_light: PointLight {
             color: Color::GREEN,
+            range: 64.,
+            // intensity: lumens::LUMENS_PER_LED_WATTS * 100.,
             ..default()
         },
         ..default()
     });
 
     commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(4., 4., -4.)),
+        transform: Transform::from_translation(Vec3::new(8., 8., -8.)),
         point_light: PointLight {
             color: Color::BLUE,
+            range: 64.,
+            // intensity: lumens::LUMENS_PER_LED_WATTS * 100.,
             ..default()
         },
         ..default()
@@ -115,12 +136,23 @@ fn spawn_ceiling(
     materials: &mut ResMut<Assets<StandardMaterial>>,
     pos: Vec3,
 ) {
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::from_size(Vec3::new(1., 0.01, 1.) * 0.2)),
-        material: materials.add(Color::rgb(0.9, 0.9, 0.9)),
-        transform: Transform::from_translation(pos + Vec3::new(0., 1., 0.)),
-        ..default()
-    });
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Cuboid::from_size(Vec3::new(1., 0.01, 1.) * 0.2)),
+            material: materials.add(Color::rgb(0.9, 0.9, 0.9)),
+            transform: Transform::from_translation(pos + Vec3::new(0., 1., 0.)),
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn(PointLightBundle {
+                point_light: PointLight {
+                    color: Color::rgb(0.9, 0.9, 1.0),
+                    intensity: lumens::LUMENS_PER_LED_WATTS * 6.,
+                    ..default()
+                },
+                ..default()
+            });
+        });
 }
 
 fn spawn_wall(
@@ -197,16 +229,8 @@ fn spawn_map_cells(
 
     let cells = Cells::from_string(cells_string);
 
-    let x_offset = (-0.5f32).mul_add(
-        cells
-            .array
-            .iter()
-            .map(Vec::len)
-            .max()
-            .unwrap_or_default() as f32,
-        0.5,
-    );
-    let z_offset = (-0.5f32).mul_add(cells.array.len() as f32, 0.5);
+    let x_offset = (-0.5f32).mul_add(cells.x as f32, 0.);
+    let z_offset = (-0.5f32).mul_add(cells.z as f32, 0.);
 
     for (z, row) in cells.array.iter().enumerate() {
         for (x, &cell_type) in row.iter().enumerate() {

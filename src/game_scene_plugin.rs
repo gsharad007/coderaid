@@ -241,16 +241,16 @@ fn spawn_map_cells(
             } else {
                 spawn_floor(commands, meshes, materials, pos);
                 spawn_ceiling(commands, meshes, materials, pos);
-                if cell_type & cell::OPEN_TOP != cell::OPEN_TOP {
+                if cell_type & cell::OPEN_NEG_Z != cell::OPEN_NEG_Z {
                     spawn_wall_top(commands, meshes, materials, pos);
                 }
-                if cell_type & cell::OPEN_BOTTOM != cell::OPEN_BOTTOM {
+                if cell_type & cell::OPEN_POS_Z != cell::OPEN_POS_Z {
                     spawn_wall_bottom(commands, meshes, materials, pos);
                 }
-                if cell_type & cell::OPEN_LEFT != cell::OPEN_LEFT {
+                if cell_type & cell::OPEN_NEG_X != cell::OPEN_NEG_X {
                     spawn_wall_left(commands, meshes, materials, pos);
                 }
-                if cell_type & cell::OPEN_RIGHT != cell::OPEN_RIGHT {
+                if cell_type & cell::OPEN_POS_X != cell::OPEN_POS_X {
                     spawn_wall_right(commands, meshes, materials, pos);
                 }
             }

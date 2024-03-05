@@ -10,12 +10,12 @@ pub mod cell {
     // pub type Type = u8;
 
     pub const EMPTY: Type = Type(0b0);
-    pub const OPEN_NEG_Z: Type = Type(0b1 << 0);
-    pub const OPEN_POS_Z: Type = Type(0b1 << 1);
-    pub const OPEN_NEG_X: Type = Type(0b1 << 2);
-    pub const OPEN_POS_X: Type = Type(0b1 << 3);
-    pub const OPEN_NEG_Y: Type = Type(0b1 << 4);
-    pub const OPEN_POS_Y: Type = Type(0b1 << 5);
+    pub const OPEN_NEG_X: Type = Type(0b1 << 0);
+    pub const OPEN_POS_X: Type = Type(0b1 << 1);
+    pub const OPEN_NEG_Y: Type = Type(0b1 << 2);
+    pub const OPEN_POS_Y: Type = Type(0b1 << 3);
+    pub const OPEN_NEG_Z: Type = Type(0b1 << 4);
+    pub const OPEN_POS_Z: Type = Type(0b1 << 5);
 }
 
 #[derive(Component, Debug)]

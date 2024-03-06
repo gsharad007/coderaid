@@ -18,53 +18,66 @@ pub mod cell {
     pub const OPEN_POS_Z: Type = Type(0b1 << 5);
 }
 
-#[derive(Component, Debug)]
+#[derive(Resource, Debug)]
 pub struct Cells {
-    pub array: Vec<Vec<cell::Type>>,
+    pub array: Vec<Vec<Vec<cell::Type>>>,
     pub x: u32,
     pub y: u32,
     pub z: u32,
 }
 
 impl Cells {
-    fn new(array: Vec<Vec<cell::Type>>, x: u32, y: u32, z: u32) -> Self {
+    fn new(array: Vec<Vec<Vec<cell::Type>>>, x: u32, y: u32, z: u32) -> Self {
         Self { array, x, y, z }
     }
 
     #[allow(clippy::cast_possible_truncation)]
     pub fn from_string(map_string: &str) -> Self {
         let cells = map_string
-            .lines()
-            .filter(|line| !line.is_empty())
-            .map(|line| line.chars().map(cell_char_to_cell_type).collect_vec())
+            .split("\n\n")
+            .map(|level| {
+                level
+                    .lines()
+                    .filter(|line| !line.is_empty())
+                    .map(|line| line.chars().map(cell_char_to_cell_type).collect_vec())
+                    .collect_vec()
+            })
             .collect_vec();
 
-        let x = cells.iter().map(Vec::len).max().unwrap_or_default();
+        let x = map_max_or_default(&cells, |sub_vec| map_max_or_default(sub_vec, Vec::len));
+        let y = map_max_or_default(&cells, Vec::len);
         let z = cells.len();
 
-        Self::new(cells, x as u32, 1, z as u32)
+        Self::new(cells, x as u32, y as u32, z as u32)
     }
+}
+
+fn map_max_or_default<T, F>(vec: &[Vec<T>], f: F) -> usize
+where
+    F: Fn(&Vec<T>) -> usize,
+{
+    vec.iter().map(f).max().unwrap_or_default()
 }
 
 #[allow(clippy::non_ascii_literal)]
 fn cell_char_to_cell_type(cell_char: char) -> cell::Type {
     match cell_char {
         // '█' => cell::EMPTY,
-        '╨' => cell::OPEN_NEG_Z,
-        '╥' => cell::OPEN_POS_Z,
+        '╨' => cell::OPEN_NEG_Y,
+        '╥' => cell::OPEN_POS_Y,
         '╞' => cell::OPEN_POS_X,
         '╡' => cell::OPEN_NEG_X,
-        '║' => cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
+        '║' => cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
         '═' => cell::OPEN_NEG_X | cell::OPEN_POS_X,
-        '╝' => cell::OPEN_NEG_Z | cell::OPEN_NEG_X,
-        '╚' => cell::OPEN_NEG_Z | cell::OPEN_POS_X,
-        '╗' => cell::OPEN_POS_Z | cell::OPEN_NEG_X,
-        '╔' => cell::OPEN_POS_Z | cell::OPEN_POS_X,
-        '╠' => cell::OPEN_NEG_Z | cell::OPEN_POS_Z | cell::OPEN_POS_X,
-        '╣' => cell::OPEN_NEG_Z | cell::OPEN_POS_Z | cell::OPEN_NEG_X,
-        '╩' => cell::OPEN_NEG_Z | cell::OPEN_NEG_X | cell::OPEN_POS_X,
-        '╦' => cell::OPEN_POS_Z | cell::OPEN_NEG_X | cell::OPEN_POS_X,
-        '╬' => cell::OPEN_NEG_Z | cell::OPEN_NEG_X | cell::OPEN_POS_X | cell::OPEN_POS_Z,
+        '╝' => cell::OPEN_NEG_Y | cell::OPEN_NEG_X,
+        '╚' => cell::OPEN_NEG_Y | cell::OPEN_POS_X,
+        '╗' => cell::OPEN_POS_Y | cell::OPEN_NEG_X,
+        '╔' => cell::OPEN_POS_Y | cell::OPEN_POS_X,
+        '╠' => cell::OPEN_NEG_Y | cell::OPEN_POS_Y | cell::OPEN_POS_X,
+        '╣' => cell::OPEN_NEG_Y | cell::OPEN_POS_Y | cell::OPEN_NEG_X,
+        '╩' => cell::OPEN_NEG_Y | cell::OPEN_NEG_X | cell::OPEN_POS_X,
+        '╦' => cell::OPEN_POS_Y | cell::OPEN_NEG_X | cell::OPEN_POS_X,
+        '╬' => cell::OPEN_NEG_Y | cell::OPEN_NEG_X | cell::OPEN_POS_X | cell::OPEN_POS_Y,
         _ => cell::EMPTY,
     }
 }
@@ -75,7 +88,7 @@ mod test_map_load_string {
 
     #[allow(clippy::indexing_slicing)]
     #[test]
-    fn test_map_load_string_4x4() {
+    fn test_map_load_string_1x4x4() {
         #[allow(clippy::non_ascii_literal)]
         let map_string = "
 ╞═╦╗
@@ -91,45 +104,45 @@ mod test_map_load_string {
 
         // ╞═╦╗
         assert_eq!(
-            cells.array[0],
+            cells.array[0][0],
             [
                 cell::OPEN_POS_X,
                 cell::OPEN_NEG_X | cell::OPEN_POS_X,
-                cell::OPEN_NEG_X | cell::OPEN_POS_X | cell::OPEN_POS_Z,
-                cell::OPEN_NEG_X | cell::OPEN_POS_Z
+                cell::OPEN_NEG_X | cell::OPEN_POS_X | cell::OPEN_POS_Y,
+                cell::OPEN_NEG_X | cell::OPEN_POS_Y
             ]
         );
 
         // ╞═╬╣
         assert_eq!(
-            cells.array[1],
+            cells.array[0][1],
             [
                 cell::OPEN_POS_X,
                 cell::OPEN_NEG_X | cell::OPEN_POS_X,
-                cell::OPEN_NEG_X | cell::OPEN_POS_X | cell::OPEN_POS_Z | cell::OPEN_NEG_Z,
-                cell::OPEN_NEG_X | cell::OPEN_POS_Z | cell::OPEN_NEG_Z
+                cell::OPEN_NEG_X | cell::OPEN_POS_X | cell::OPEN_POS_Y | cell::OPEN_NEG_Y,
+                cell::OPEN_NEG_X | cell::OPEN_POS_Y | cell::OPEN_NEG_Y
             ]
         );
 
         // ██║║
         assert_eq!(
-            cells.array[2],
+            cells.array[0][2],
             [
                 cell::EMPTY,
                 cell::EMPTY,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y
             ]
         );
 
         // ╞═╩╝
         assert_eq!(
-            cells.array[3],
+            cells.array[0][3],
             [
                 cell::OPEN_POS_X,
                 cell::OPEN_NEG_X | cell::OPEN_POS_X,
-                cell::OPEN_NEG_X | cell::OPEN_POS_X | cell::OPEN_NEG_Z,
-                cell::OPEN_NEG_X | cell::OPEN_NEG_Z
+                cell::OPEN_NEG_X | cell::OPEN_POS_X | cell::OPEN_NEG_Y,
+                cell::OPEN_NEG_X | cell::OPEN_NEG_Y
             ]
         );
     }
@@ -137,7 +150,7 @@ mod test_map_load_string {
     #[allow(clippy::indexing_slicing)]
     #[allow(clippy::too_many_lines)]
     #[test]
-    fn test_map_load_string_8x8() {
+    fn test_map_load_string_1x8x8() {
         #[allow(clippy::non_ascii_literal)]
         let map_string = "
 ╞═╦╗╔╦╩╡
@@ -157,104 +170,104 @@ mod test_map_load_string {
 
         // ╞═╦╗╔╦╩╡
         assert_eq!(
-            cells.array[0],
+            cells.array[0][0],
             [
                 cell::OPEN_POS_X,
                 cell::OPEN_POS_X | cell::OPEN_NEG_X,
-                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_POS_Z,
-                cell::OPEN_NEG_X | cell::OPEN_POS_Z,
-                cell::OPEN_POS_X | cell::OPEN_POS_Z,
-                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_POS_Z,
-                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_NEG_Z,
+                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_POS_Y,
+                cell::OPEN_NEG_X | cell::OPEN_POS_Y,
+                cell::OPEN_POS_X | cell::OPEN_POS_Y,
+                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_POS_Y,
+                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_NEG_Y,
                 cell::OPEN_NEG_X
             ]
         );
 
         // ╞═╬╣╠╬╦╡
         assert_eq!(
-            cells.array[1],
+            cells.array[0][1],
             [
                 cell::OPEN_POS_X,
                 cell::OPEN_POS_X | cell::OPEN_NEG_X,
-                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
-                cell::OPEN_NEG_X | cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
-                cell::OPEN_POS_X | cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
-                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
-                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_POS_Z,
+                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
+                cell::OPEN_NEG_X | cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
+                cell::OPEN_POS_X | cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
+                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
+                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_POS_Y,
                 cell::OPEN_NEG_X
             ]
         );
 
         // ██║║╠╣║█
         assert_eq!(
-            cells.array[2],
+            cells.array[0][2],
             [
                 cell::EMPTY,
                 cell::EMPTY,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z | cell::OPEN_POS_X,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z | cell::OPEN_NEG_X,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y | cell::OPEN_POS_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y | cell::OPEN_NEG_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
                 cell::EMPTY
             ]
         );
 
         // ╞═╩╝╠╣║█
         assert_eq!(
-            cells.array[3],
+            cells.array[0][3],
             [
                 cell::OPEN_POS_X,
                 cell::OPEN_POS_X | cell::OPEN_NEG_X,
-                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_NEG_Z,
-                cell::OPEN_NEG_X | cell::OPEN_NEG_Z,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z | cell::OPEN_POS_X,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z | cell::OPEN_NEG_X,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
+                cell::OPEN_POS_X | cell::OPEN_NEG_X | cell::OPEN_NEG_Y,
+                cell::OPEN_NEG_X | cell::OPEN_NEG_Y,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y | cell::OPEN_POS_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y | cell::OPEN_NEG_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
                 cell::EMPTY
             ]
         );
 
         // ╔╗╔╗╚╝║█
         assert_eq!(
-            cells.array[4],
+            cells.array[0][4],
             [
-                cell::OPEN_POS_Z | cell::OPEN_POS_X,
-                cell::OPEN_POS_Z | cell::OPEN_NEG_X,
-                cell::OPEN_POS_Z | cell::OPEN_POS_X,
-                cell::OPEN_POS_Z | cell::OPEN_NEG_X,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_X,
-                cell::OPEN_NEG_Z | cell::OPEN_NEG_X,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_Z,
+                cell::OPEN_POS_Y | cell::OPEN_POS_X,
+                cell::OPEN_POS_Y | cell::OPEN_NEG_X,
+                cell::OPEN_POS_Y | cell::OPEN_POS_X,
+                cell::OPEN_POS_Y | cell::OPEN_NEG_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_X,
+                cell::OPEN_NEG_Y | cell::OPEN_NEG_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_Y,
                 cell::EMPTY
             ]
         );
 
         // ╝╚╝╚╗╔╝█
         assert_eq!(
-            cells.array[5],
+            cells.array[0][5],
             [
-                cell::OPEN_NEG_Z | cell::OPEN_NEG_X,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_X,
-                cell::OPEN_NEG_Z | cell::OPEN_NEG_X,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_X,
-                cell::OPEN_POS_Z | cell::OPEN_NEG_X,
-                cell::OPEN_POS_Z | cell::OPEN_POS_X,
-                cell::OPEN_NEG_Z | cell::OPEN_NEG_X,
+                cell::OPEN_NEG_Y | cell::OPEN_NEG_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_X,
+                cell::OPEN_NEG_Y | cell::OPEN_NEG_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_X,
+                cell::OPEN_POS_Y | cell::OPEN_NEG_X,
+                cell::OPEN_POS_Y | cell::OPEN_POS_X,
+                cell::OPEN_NEG_Y | cell::OPEN_NEG_X,
                 cell::EMPTY
             ]
         );
 
         // ████╚╝██
         assert_eq!(
-            cells.array[6],
+            cells.array[0][6],
             [
                 cell::EMPTY,
                 cell::EMPTY,
                 cell::EMPTY,
                 cell::EMPTY,
-                cell::OPEN_NEG_Z | cell::OPEN_POS_X,
-                cell::OPEN_NEG_Z | cell::OPEN_NEG_X,
+                cell::OPEN_NEG_Y | cell::OPEN_POS_X,
+                cell::OPEN_NEG_Y | cell::OPEN_NEG_X,
                 cell::EMPTY,
                 cell::EMPTY,
             ]
@@ -262,14 +275,14 @@ mod test_map_load_string {
 
         // ████╔╗██
         assert_eq!(
-            cells.array[7],
+            cells.array[0][7],
             [
                 cell::EMPTY,
                 cell::EMPTY,
                 cell::EMPTY,
                 cell::EMPTY,
-                cell::OPEN_POS_Z | cell::OPEN_POS_X,
-                cell::OPEN_POS_Z | cell::OPEN_NEG_X,
+                cell::OPEN_POS_Y | cell::OPEN_POS_X,
+                cell::OPEN_POS_Y | cell::OPEN_NEG_X,
                 cell::EMPTY,
                 cell::EMPTY,
             ]

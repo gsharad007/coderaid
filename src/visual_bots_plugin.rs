@@ -14,7 +14,7 @@ pub struct VisualBotsPlugin;
 
 impl Plugin for VisualBotsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, startup_visual_bots)
+        _ = app.add_systems(Startup, startup_visual_bots)
             .add_systems(Update, on_bot_spawned_listener_system);
     }
 }
@@ -30,11 +30,11 @@ fn on_bot_spawned_listener_system(
 ) {
     for event in bot_spawned_reader.read() {
         if let Some(mut entity_command) = commands.get_entity(event.entity) {
-            entity_command.with_children(|parent| {
-                parent.spawn(PbrBundle {
+            _ = entity_command.with_children(|parent| {
+                _ = parent.spawn(PbrBundle {
                     mesh: meshes.add(Cylinder::new(0.4, 0.1)),
                     material: materials.add(Color::rgb(0.6, 0.7, 0.9)),
-                    transform: Transform::from_xyz(0., 0.1, 0.),
+                    transform: Transform::from_xyz(0.5, 0.5, 0.5),
                     ..default()
                 });
             });

@@ -20,6 +20,7 @@ opt-level = 3
 opt-level = 1
 
 [lints.rust]
+unused_results = "warn"
 future-incompatible = "warn"
 # rust-2024-compatibility = "warn"
 

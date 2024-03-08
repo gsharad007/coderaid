@@ -1,9 +1,12 @@
+use core::f32::consts::FRAC_PI_2;
 use core::time::Duration;
 
 use bevy::prelude::*;
 use bevy_prng::WyRand;
 use bevy_rand::resource::GlobalEntropy;
 use rand_core::RngCore;
+
+use crate::game_coordinates_utils::CellIndices;
 
 const BOT_SPAWNING_INTERVAL: f32 = 2.;
 const BOT_MOVEMENT_SPEED: f32 = 1.;
@@ -13,7 +16,8 @@ pub struct BotsPlugin;
 
 impl Plugin for BotsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<BotSpawnedEvent>()
+        _ = app
+            .add_event::<BotSpawnedEvent>()
             .init_resource::<BotSpawnerTimer>()
             .add_systems(Startup, bots_startup)
             .add_systems(Update, (bots_spawning_system, bots_movement_system));
@@ -75,22 +79,23 @@ fn spawn_bot_on_map_trigger_event(
 ) {
     let (transfrom, bot_entity) = spawn_bot_on_map(commands, rng);
 
-    bot_spawned_writer.send(BotSpawnedEvent {
+    _ = bot_spawned_writer.send(BotSpawnedEvent {
         entity: bot_entity,
         transform: transfrom,
     });
 }
 
-#[allow(clippy::cast_precision_loss)]
+#[allow(clippy::cast_possible_wrap)]
 fn spawn_bot_on_map(
     commands: Commands,
     mut rng: ResMut<GlobalEntropy<WyRand>>,
 ) -> (Transform, Entity) {
-    let transfrom = Transform::from_xyz(
-        (rng.next_u32() % 16) as f32 - 5.,
-        0.0,
-        (rng.next_u32() % 16) as f32 - 5.,
-    );
+    let transfrom = CellIndices::new(
+        0, //(rng.next_u32() % 16) as i32,
+        (rng.next_u32() % 16) as i32,
+        0,
+    )
+    .as_game_coordinates_transform();
     let bot_entity = spawn_bot_with_transform(commands, transfrom);
     (transfrom, bot_entity)
 }

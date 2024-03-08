@@ -9,12 +9,12 @@ pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostStartup, setup_panning_orbiting_camera);
-        app.add_systems(
-            Update,
-            (camera_panning_system, camera_orbiting_system).before(update_camera_target),
-        );
-        app.add_systems(Update, update_camera_target);
+        _ = app.add_systems(PostStartup, setup_panning_orbiting_camera)
+            .add_systems(
+                Update,
+                (camera_panning_system, camera_orbiting_system).before(update_camera_target),
+            )
+            .add_systems(Update, update_camera_target);
     }
 }
 
@@ -48,7 +48,7 @@ impl Default for CameraLooking {
 #[allow(clippy::needless_pass_by_value)]
 fn setup_panning_orbiting_camera(mut commands: Commands, query: Query<Entity, With<Camera>>) {
     for camera_entity in &query {
-        commands.entity(camera_entity).insert((
+        _ = commands.entity(camera_entity).insert((
             CameraTarget::default(),
             CameraLooking {
                 look_from: Vec3::splat(16.),

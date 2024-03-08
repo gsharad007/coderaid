@@ -14,13 +14,14 @@ use bevy::{
 
 use crate::game_cells_plugin::cell;
 use crate::game_cells_plugin::Cells;
+use crate::game_coordinates_utils::{AxisOrientedCellIndices, CellIndices, CELL_SIZE};
 
 #[derive(Debug)]
 pub struct SceneElementsPlugin;
 
 impl Plugin for SceneElementsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, create_scene);
+        _ = app.add_systems(Startup, create_scene);
     }
 }
 
@@ -54,7 +55,7 @@ fn create_scene(
     //     ..default()
     // });
 
-    commands.spawn(PointLightBundle {
+    _ = commands.spawn(PointLightBundle {
         transform: Transform::from_translation(Vec3::new(8., 8., 8.)),
         point_light: PointLight {
             color: Color::RED,
@@ -65,7 +66,7 @@ fn create_scene(
         ..default()
     });
 
-    commands.spawn(PointLightBundle {
+    _ = commands.spawn(PointLightBundle {
         transform: Transform::from_translation(Vec3::new(-8., 8., 8.)),
         point_light: PointLight {
             color: Color::GREEN,
@@ -76,7 +77,7 @@ fn create_scene(
         ..default()
     });
 
-    commands.spawn(PointLightBundle {
+    _ = commands.spawn(PointLightBundle {
         transform: Transform::from_translation(Vec3::new(8., 8., -8.)),
         point_light: PointLight {
             color: Color::BLUE,
@@ -87,7 +88,7 @@ fn create_scene(
         ..default()
     });
 
-    commands.spawn(PbrBundle {
+    _ = commands.spawn(PbrBundle {
         mesh: meshes.add(
             Sphere::new(0.125)
                 .mesh()
@@ -101,8 +102,6 @@ fn create_scene(
 
     spawn_map_cells(&mut commands, &mut meshes, &mut materials);
 }
-
-const CELLS_POSITION_AXIS_ORIENTATION: IVec3 = IVec3::new(1, -1, -1);
 
 #[allow(clippy::cast_precision_loss)]
 fn spawn_map_cells(
@@ -126,37 +125,40 @@ fn spawn_map_cells(
 
     #[allow(clippy::cast_possible_wrap)]
     // let cells_offset = -Vec3::ZERO * CELLS_POSITION_AXIS_ORIENTATION;
-    let cells_offset = -IVec3::new(
+    let cells_offset = -AxisOrientedCellIndices::from_cell_indices(CellIndices::new(
         (cells.x / 2) as i32,
         (cells.y / 2) as i32,
         (cells.z / 2) as i32,
-    ) * CELLS_POSITION_AXIS_ORIENTATION;
+    ));
 
     for (level, z) in cells.array.iter().zip(0..) {
         for (row, y) in level.iter().zip(0..) {
             for (&cell_type, x) in row.iter().zip(0..) {
-                let pos = (IVec3::new(x, y, z) * CELLS_POSITION_AXIS_ORIENTATION) + cells_offset;
+                let cell_indices_offsetted =
+                    AxisOrientedCellIndices::from_cell_indices(CellIndices::new(x, y, z))
+                        + cells_offset;
+                let cell_position = cell_indices_offsetted.as_cell_centered_visual_coordinates();
 
                 if cell_type == cell::EMPTY {
-                    spawn_closed(commands, meshes, materials, pos);
+                    spawn_closed(commands, meshes, materials, cell_position);
                 } else {
                     if cell_type & cell::OPEN_POS_X != cell::OPEN_POS_X {
-                        spawn_wall_pos_x(commands, meshes, materials, pos);
+                        spawn_wall_pos_x(commands, meshes, materials, cell_position);
                     }
                     if cell_type & cell::OPEN_NEG_X != cell::OPEN_NEG_X {
-                        spawn_wall_neg_x(commands, meshes, materials, pos);
+                        spawn_wall_neg_x(commands, meshes, materials, cell_position);
                     }
                     if cell_type & cell::OPEN_POS_Y != cell::OPEN_POS_Y {
-                        spawn_wall_pos_y(commands, meshes, materials, pos);
+                        spawn_wall_pos_y(commands, meshes, materials, cell_position);
                     }
                     if cell_type & cell::OPEN_NEG_Y != cell::OPEN_NEG_Y {
-                        spawn_wall_neg_y(commands, meshes, materials, pos);
+                        spawn_wall_neg_y(commands, meshes, materials, cell_position);
                     }
                     // if cell_type & cell::OPEN_POS_Z != cell::OPEN_POS_Z {
                     //     spawn_wall_pos_z(commands, meshes, materials, pos);
                     // }
                     if cell_type & cell::OPEN_NEG_Z != cell::OPEN_NEG_Z {
-                        spawn_wall_neg_z(commands, meshes, materials, pos);
+                        spawn_wall_neg_z(commands, meshes, materials, cell_position);
                     }
                 }
             }
@@ -164,74 +166,17 @@ fn spawn_map_cells(
     }
 }
 
-const CELL_VISUAL_OFFSET: Vec3 = Vec3::new(0.5, -0.5, 0.5);
-const CELL_SIZE: f32 = 1.0; // Assuming the cell size is 1 unit
-const WALL_THICKNESS: f32 = 0.1; // Thickness of the wall
-
-fn spawn_closed(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: IVec3,
-) {
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::from_size(Vec3::ONE - WALL_THICKNESS)),
-        material: materials.add(Color::rgb(0.2, 0.1, 0.0)),
-        transform: Transform::from_translation(pos.as_vec3() + CELL_VISUAL_OFFSET),
-        ..default()
-    });
-}
-
-fn spawn_floor(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: Vec3,
-) {
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::from_size(Vec3::new(1., 0.01, 1.) * 0.9)),
-        material: materials.add(Color::rgb(0.7, 0.7, 0.7)),
-        transform: Transform::from_translation(pos),
-        ..default()
-    });
-}
-
-fn spawn_ceiling(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: Vec3,
-) {
-    commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Cuboid::from_size(Vec3::new(1., 0.01, 1.) * 0.2)),
-            material: materials.add(Color::rgb(0.9, 0.9, 0.9)),
-            transform: Transform::from_translation(pos + Vec3::new(0., 1., 0.)),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn(PointLightBundle {
-                point_light: PointLight {
-                    color: Color::rgb(0.9, 0.9, 1.0),
-                    intensity: lumens::LUMENS_PER_LED_WATTS * 6.,
-                    ..default()
-                },
-                ..default()
-            });
-        });
-}
-
 fn spawn_wall_pos_x(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: IVec3,
+    position: Vec3,
 ) {
     spawn_wall(
         commands,
         meshes,
         materials,
-        pos,
+        position,
         Quat::from_rotation_y(-1. * FRAC_PI_2),
     );
 }
@@ -240,13 +185,13 @@ fn spawn_wall_neg_x(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: IVec3,
+    position: Vec3,
 ) {
     spawn_wall(
         commands,
         meshes,
         materials,
-        pos,
+        position,
         Quat::from_rotation_y(-3. * FRAC_PI_2),
     );
 }
@@ -255,13 +200,13 @@ fn spawn_wall_pos_y(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: IVec3,
+    position: Vec3,
 ) {
     spawn_wall(
         commands,
         meshes,
         materials,
-        pos,
+        position,
         Quat::from_rotation_x(-1. * FRAC_PI_2),
     );
 }
@@ -270,13 +215,13 @@ fn spawn_wall_neg_y(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: IVec3,
+    position: Vec3,
 ) {
     spawn_wall(
         commands,
         meshes,
         materials,
-        pos,
+        position,
         Quat::from_rotation_x(-3. * FRAC_PI_2),
     );
 }
@@ -285,13 +230,13 @@ fn spawn_wall_pos_z(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: IVec3,
+    position: Vec3,
 ) {
     spawn_wall(
         commands,
         meshes,
         materials,
-        pos,
+        position,
         Quat::from_rotation_x(-2. * FRAC_PI_2),
     );
 }
@@ -300,28 +245,43 @@ fn spawn_wall_neg_z(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    pos: IVec3,
+    position: Vec3,
 ) {
     spawn_wall(
         commands,
         meshes,
         materials,
-        pos,
+        position,
         Quat::from_rotation_x(0. * FRAC_PI_2),
     );
+}
+
+const WALL_THICKNESS: f32 = 0.1; // Thickness of the wall
+
+fn spawn_closed(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    position: Vec3,
+) {
+    _ = commands.spawn(PbrBundle {
+        mesh: meshes.add(Cuboid::from_size(Vec3::splat(CELL_SIZE - WALL_THICKNESS))),
+        material: materials.add(Color::rgb(0.2, 0.1, 0.0)),
+        transform: Transform::from_translation(position),
+        ..default()
+    });
 }
 
 fn spawn_wall(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    cell_indices: IVec3,
+    position: Vec3,
     rotation: Quat,
 ) {
     let offset = rotation.mul_vec3(Vec3::new(0.0, 0.0, -(0.5 - WALL_THICKNESS)));
-    let position = (cell_indices.as_vec3() + CELL_VISUAL_OFFSET) * CELL_SIZE;
 
-    commands
+    _ = commands
         .spawn(PbrBundle {
             mesh: meshes.add(Cuboid::from_size(Vec3::new(
                 CELL_SIZE - WALL_THICKNESS,
@@ -333,7 +293,7 @@ fn spawn_wall(
             ..default()
         })
         .with_children(|parent| {
-            parent.spawn(PointLightBundle {
+            _ = parent.spawn(PointLightBundle {
                 point_light: PointLight {
                     color: Color::rgb(0.8, 0.8, 1.0),
                     intensity: lumens::LUMENS_PER_LED_WATTS * 6.,

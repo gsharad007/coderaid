@@ -6,7 +6,8 @@ pub struct CameraSetupPlugin;
 
 impl Plugin for CameraSetupPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ClearColor>()
+        _ = app
+            .init_resource::<ClearColor>()
             .add_systems(Startup, setup_perspective_camera_3d);
     }
 }
@@ -30,7 +31,7 @@ impl Plugin for CameraSetupPlugin {
 
 /// Sets up a perspective camera with default parameters
 fn setup_perspective_camera_3d(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
+    _ = commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(10., 12., 10.).looking_at(Vec3::ZERO, Vec3::Y),
         projection: PerspectiveProjection::default().into(),
         ..default()

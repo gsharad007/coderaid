@@ -41,7 +41,7 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         // resolution: (640.0, 480.0).into(),
-                        title: "CodeRaid".to_string(),
+                        title: "CodeRaid".to_owned(),
                         ..default()
                     }),
                     ..default()

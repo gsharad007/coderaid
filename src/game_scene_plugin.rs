@@ -6,11 +6,11 @@ use bevy::{
     asset::Assets,
     ecs::system::{Commands, ResMut},
     math::Vec3,
-    pbr::{light_consts::lux, PbrBundle, PointLight, PointLightBundle, StandardMaterial},
+    pbr::{PbrBundle, PointLight, PointLightBundle, StandardMaterial},
     render::{color::Color, mesh::Mesh},
     transform::components::Transform,
 };
-use bevy::{log, prelude::*};
+use bevy::{prelude::*};
 
 use crate::game_cells_plugin::cell;
 use crate::game_cells_plugin::Cells;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::{
-    app::{App, Plugin, Startup},
+    app::{App, Plugin},
     asset::Assets,
     ecs::system::{Commands, ResMut},
     pbr::{PbrBundle, StandardMaterial},

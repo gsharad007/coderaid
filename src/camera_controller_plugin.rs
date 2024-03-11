@@ -9,7 +9,8 @@ pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        _ = app.add_systems(PostStartup, setup_panning_orbiting_camera)
+        _ = app
+            .add_systems(PostStartup, setup_panning_orbiting_camera)
             .add_systems(
                 Update,
                 (camera_panning_system, camera_orbiting_system).before(update_camera_target),
@@ -121,15 +122,11 @@ fn camera_panning_system(
     let translation = translation * (CAMERA_PANNING_SPEED * time.delta_seconds());
 
     for (mut camera_target, transform) in &mut query {
-        let translation_right = transform.right().xz().normalize_or_zero();
-        let translation_forward = transform
-            .forward()
-            .xz()
-            .try_normalize()
-            .unwrap_or_else(|| transform.up().xz().normalize_or_zero());
+        let translation_up = transform.up().normalize_or_zero();
+        let translation_right = transform.right().normalize_or_zero();
         let viewspace_translation =
-            (translation_right * translation.x) + (translation_forward * translation.y);
-        camera_target.target += Vec3::new(viewspace_translation.x, 0., viewspace_translation.y);
+            (translation_right * translation.x) + (translation_up * translation.y);
+        camera_target.target += viewspace_translation;
     }
 }
 
@@ -176,10 +173,11 @@ fn camera_orbiting_system(
     let pitch = delta.y;
 
     for (mut camera_looking, transform) in &mut query {
+        let translation_up = transform.up().normalize_or_zero();
         let translation_right = transform.right().normalize_or_zero();
 
-        let rotation =
-            Quat::from_rotation_y(yaw).mul_quat(Quat::from_axis_angle(translation_right, -pitch));
+        let rotation = Quat::from_axis_angle(translation_up, yaw)
+            .mul_quat(Quat::from_axis_angle(translation_right, -pitch));
 
         camera_looking.look_from = rotation.mul_vec3(camera_looking.look_from);
         camera_looking.up = rotation.mul_vec3(camera_looking.up);

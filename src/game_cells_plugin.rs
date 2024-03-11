@@ -21,17 +21,16 @@ pub mod cell {
 #[derive(Resource, Debug)]
 pub struct Cells {
     pub array: Vec<Vec<Vec<cell::Type>>>,
-    pub x: u32,
-    pub y: u32,
-    pub z: u32,
+    pub size: IVec3,
 }
 
 impl Cells {
-    fn new(array: Vec<Vec<Vec<cell::Type>>>, x: u32, y: u32, z: u32) -> Self {
-        Self { array, x, y, z }
+    fn new(array: Vec<Vec<Vec<cell::Type>>>, size: IVec3) -> Self {
+        Self { array, size }
     }
 
     #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
     pub fn from_string(map_string: &str) -> Self {
         let cells = map_string
             .split("\n\n")
@@ -48,7 +47,11 @@ impl Cells {
         let y = map_max_or_default(&cells, Vec::len);
         let z = cells.len();
 
-        Self::new(cells, x as u32, y as u32, z as u32)
+        assert!(
+            x < i32::MAX as usize && y < i32::MAX as usize && z < i32::MAX as usize,
+            "Map Cells Too big {x:?} {y:?} {z:?}"
+        );
+        Self::new(cells, IVec3::new(x as i32, y as i32, z as i32))
     }
 }
 

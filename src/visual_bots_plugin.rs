@@ -14,13 +14,14 @@ pub struct VisualBotsPlugin;
 
 impl Plugin for VisualBotsPlugin {
     fn build(&self, app: &mut App) {
-        _ = app.add_systems(Startup, startup_visual_bots)
+        _ = app
+            // .add_systems(Startup, startup_visual_bots)
             .add_systems(Update, on_bot_spawned_listener_system);
     }
 }
 
-/// TODO: Preinitialize assets
-fn startup_visual_bots() {}
+// /// TODO: Preinitialize assets
+// fn startup_visual_bots() {}
 
 fn on_bot_spawned_listener_system(
     mut commands: Commands,

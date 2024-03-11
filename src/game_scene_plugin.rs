@@ -1,7 +1,6 @@
 use core::f32::consts::FRAC_PI_2;
 
 use bevy::pbr::light_consts::lumens;
-use bevy::prelude::*;
 use bevy::{
     app::{App, Plugin, Startup},
     asset::Assets,
@@ -11,10 +10,13 @@ use bevy::{
     render::{color::Color, mesh::Mesh},
     transform::components::Transform,
 };
+use bevy::{log, prelude::*};
 
 use crate::game_cells_plugin::cell;
 use crate::game_cells_plugin::Cells;
 use crate::game_coordinates_utils::{AxisOrientedCellIndices, CellIndices, CELL_SIZE};
+use crate::game_setup_data::MapData;
+use crate::ibounds3::IBounds3;
 
 #[derive(Debug)]
 pub struct SceneElementsPlugin;
@@ -28,6 +30,7 @@ impl Plugin for SceneElementsPlugin {
 /// Creates the scene elements (floor, walls, ceiling)
 fn create_scene(
     mut commands: Commands,
+    mut map_data: ResMut<MapData>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -100,12 +103,14 @@ fn create_scene(
         ..default()
     });
 
-    spawn_map_cells(&mut commands, &mut meshes, &mut materials);
+    spawn_map_cells(&mut commands, &mut map_data, &mut meshes, &mut materials);
 }
 
+#[allow(clippy::cast_possible_wrap)]
 #[allow(clippy::cast_precision_loss)]
 fn spawn_map_cells(
     commands: &mut Commands,
+    map_data: &mut ResMut<MapData>,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
@@ -123,13 +128,12 @@ fn spawn_map_cells(
 
     let cells = Cells::from_string(cells_string);
 
-    #[allow(clippy::cast_possible_wrap)]
+    map_data.bounds = IBounds3::new(IVec3::ZERO, cells.size);
+    println!("Map bounds: {:?}", map_data.bounds);
+
     // let cells_offset = -Vec3::ZERO * CELLS_POSITION_AXIS_ORIENTATION;
-    let cells_offset = -AxisOrientedCellIndices::from_cell_indices(CellIndices::new(
-        (cells.x / 2) as i32,
-        (cells.y / 2) as i32,
-        (cells.z / 2) as i32,
-    ));
+    let cells_offset =
+        AxisOrientedCellIndices::from_cell_indices(CellIndices::from_ivec3(map_data.bounds.min));
 
     for (level, z) in cells.array.iter().zip(0..) {
         for (row, y) in level.iter().zip(0..) {

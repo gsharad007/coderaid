@@ -112,7 +112,7 @@ fn generate_random_cell_indices(
 
 fn spawn_bot_with_transform(mut commands: Commands, transfrom: Transform) -> Entity {
     let bot_entity = commands
-        .spawn((Bot {}, TransformBundle::from(transfrom)))
+        .spawn((Bot {}, SpatialBundle::from_transform(transfrom)))
         .id();
     bot_entity
 }

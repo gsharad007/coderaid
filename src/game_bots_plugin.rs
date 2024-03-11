@@ -5,7 +5,7 @@ use bevy_prng::WyRand;
 use bevy_rand::resource::GlobalEntropy;
 use rand_core::RngCore;
 
-use crate::game_coordinates_utils::CellIndices;
+use crate::game_coordinates_utils::CellCoords;
 use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
 
@@ -103,11 +103,11 @@ fn spawn_bot_on_map(
 fn generate_random_cell_indices(
     mut rng: ResMut<'_, GlobalEntropy<WyRand>>,
     map_bounds: &IBounds3,
-) -> CellIndices {
+) -> CellCoords {
     let size = map_bounds.size().as_uvec3();
     let random_coords = UVec3::new(rng.next_u32(), rng.next_u32(), rng.next_u32());
     let random_coords_limited = random_coords % size;
-    CellIndices::from_ivec3(random_coords_limited.as_ivec3() + map_bounds.min)
+    CellCoords::from_ivec3(random_coords_limited.as_ivec3() + map_bounds.min)
 }
 
 fn spawn_bot_with_transform(mut commands: Commands, transfrom: Transform) -> Entity {

@@ -7,13 +7,13 @@ use bevy::{
 };
 
 #[derive(Debug, Clone, Copy, Add, Sub)]
-pub struct CellIndices {
+pub struct CellCoords {
     x: i32,
     y: i32,
     z: i32,
 }
 
-impl CellIndices {
+impl CellCoords {
     /// Creates a new
     #[inline]
     pub const fn new(x: i32, y: i32, z: i32) -> Self {
@@ -45,16 +45,16 @@ impl CellIndices {
     }
 }
 
-impl From<IVec3> for CellIndices {
+impl From<IVec3> for CellCoords {
     #[inline]
     fn from(value: IVec3) -> Self {
         Self::from_ivec3(value)
     }
 }
 
-impl From<CellIndices> for IVec3 {
+impl From<CellCoords> for IVec3 {
     #[inline]
-    fn from(value: CellIndices) -> Self {
+    fn from(value: CellCoords) -> Self {
         value.as_ivec3()
     }
 }
@@ -65,13 +65,13 @@ pub const CELL_SIZE: f32 = 1.0; // Assuming the cell size is 1 unit
 const CELL_VISUAL_OFFSET: Vec3 = Vec3::new(0.5, -0.5, 0.5);
 
 #[derive(Debug, Clone, Copy, Add, Sub, Neg)]
-pub struct AxisOrientedCellIndices {
+pub struct AxisOrientedCellCoords {
     x: i32,
     y: i32,
     z: i32,
 }
 
-impl AxisOrientedCellIndices {
+impl AxisOrientedCellCoords {
     /// All zeroes.
     pub const ZERO: Self = Self::splat(0);
 
@@ -95,7 +95,7 @@ impl AxisOrientedCellIndices {
     }
 
     #[inline]
-    pub fn from_cell_indices(cell_indices: CellIndices) -> Self {
+    pub fn from_cell_indices(cell_indices: CellCoords) -> Self {
         let pos = cell_indices.as_ivec3() * CELLS_POSITION_AXIS_ORIENTATION;
         Self::from_ivec3(pos)
     }
@@ -119,7 +119,7 @@ impl AxisOrientedCellIndices {
     }
 }
 
-impl From<IVec3> for AxisOrientedCellIndices {
+impl From<IVec3> for AxisOrientedCellCoords {
     #[inline]
     #[must_use]
     fn from(ivec3: IVec3) -> Self {
@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_cell_indices_new() {
-        let cell_indices = CellIndices::new(1, 2, 3);
+        let cell_indices = CellCoords::new(1, 2, 3);
         assert_eq!(cell_indices.x, 1);
         assert_eq!(cell_indices.y, 2);
         assert_eq!(cell_indices.z, 3);
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn test_cell_indices_from_ivec3() {
         let ivec3 = IVec3::new(4, 5, 6);
-        let cell_indices = CellIndices::from_ivec3(ivec3);
+        let cell_indices = CellCoords::from_ivec3(ivec3);
         assert_eq!(cell_indices.x, 4);
         assert_eq!(cell_indices.y, 5);
         assert_eq!(cell_indices.z, 6);
@@ -150,21 +150,21 @@ mod tests {
 
     #[test]
     fn test_cell_indices_as_vec3() {
-        let cell_indices = CellIndices::new(1, 2, 3);
+        let cell_indices = CellCoords::new(1, 2, 3);
         let vec3 = cell_indices.as_vec3();
         assert_eq!(vec3, Vec3::new(1.0, 2.0, 3.0));
     }
 
     #[test]
     fn test_cell_indices_as_ivec3() {
-        let cell_indices = CellIndices::new(1, 2, 3);
+        let cell_indices = CellCoords::new(1, 2, 3);
         let ivec3 = cell_indices.as_ivec3();
         assert_eq!(ivec3, IVec3::new(1, 2, 3));
     }
 
     #[test]
     fn test_cell_indices_as_game_coordinates_transform() {
-        let cell_indices = CellIndices::new(1, 2, 3);
+        let cell_indices = CellCoords::new(1, 2, 3);
         let transform = cell_indices.as_game_coordinates_transform();
         let expected_transform = Transform::from_translation(Vec3::new(1.0, 2.0, 3.0))
             .with_rotation(Quat::from_rotation_x(FRAC_PI_2));
@@ -173,8 +173,8 @@ mod tests {
 
     #[test]
     fn test_axis_oriented_cell_indices_from_cell_indices() {
-        let cell_indices = CellIndices::new(1, 2, 3);
-        let axis_oriented_cell_indices = AxisOrientedCellIndices::from_cell_indices(cell_indices);
+        let cell_indices = CellCoords::new(1, 2, 3);
+        let axis_oriented_cell_indices = AxisOrientedCellCoords::from_cell_indices(cell_indices);
         assert_eq!(axis_oriented_cell_indices.x, 1);
         assert_eq!(axis_oriented_cell_indices.y, -3);
         assert_eq!(axis_oriented_cell_indices.z, -2);
@@ -182,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_axis_oriented_cell_indices_as_vec3() {
-        let axis_oriented_cell_indices = AxisOrientedCellIndices::new(1, 2, 3);
+        let axis_oriented_cell_indices = AxisOrientedCellCoords::new(1, 2, 3);
         let vec3 = axis_oriented_cell_indices.as_vec3();
         assert_eq!(vec3, Vec3::new(1.0, 2.0, 3.0));
     }
@@ -190,11 +190,11 @@ mod tests {
     #[test]
     fn test_axis_oriented_cell_indices_as_cell_centered_visual_coordinates() {
         assert_eq!(
-            AxisOrientedCellIndices::ZERO.as_cell_centered_visual_coordinates(),
+            AxisOrientedCellCoords::ZERO.as_cell_centered_visual_coordinates(),
             Vec3::new(0.5, -0.5, 0.5)
         );
         assert_eq!(
-            AxisOrientedCellIndices::new(1, 2, 3).as_cell_centered_visual_coordinates(),
+            AxisOrientedCellCoords::new(1, 2, 3).as_cell_centered_visual_coordinates(),
             Vec3::new(1.5, 1.5, 3.5)
         );
     }

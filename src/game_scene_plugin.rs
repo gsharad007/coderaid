@@ -14,7 +14,7 @@ use bevy::{prelude::*};
 
 use crate::game_cells_plugin::cell;
 use crate::game_cells_plugin::Cells;
-use crate::game_coordinates_utils::{AxisOrientedCellIndices, CellIndices, CELL_SIZE};
+use crate::game_coordinates_utils::{AxisOrientedCellCoords, CellCoords, CELL_SIZE};
 use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
 
@@ -133,13 +133,13 @@ fn spawn_map_cells(
 
     // let cells_offset = -Vec3::ZERO * CELLS_POSITION_AXIS_ORIENTATION;
     let cells_offset =
-        AxisOrientedCellIndices::from_cell_indices(CellIndices::from_ivec3(map_data.bounds.min));
+        AxisOrientedCellCoords::from_cell_indices(CellCoords::from_ivec3(map_data.bounds.min));
 
     for (level, z) in cells.array.iter().zip(0..) {
         for (row, y) in level.iter().zip(0..) {
             for (&cell_type, x) in row.iter().zip(0..) {
                 let cell_indices_offsetted =
-                    AxisOrientedCellIndices::from_cell_indices(CellIndices::new(x, y, z))
+                    AxisOrientedCellCoords::from_cell_indices(CellCoords::new(x, y, z))
                         + cells_offset;
                 let cell_position = cell_indices_offsetted.as_cell_centered_visual_coordinates();
 

@@ -11,8 +11,6 @@ mod camera_setup_plugin;
 
 mod visual_bots_plugin;
 
-use std::default;
-
 use bevy::prelude::PluginGroup;
 use bevy::utils::default;
 use bevy::{

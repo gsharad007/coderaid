@@ -2,7 +2,7 @@ use bevy::math::bounding::BoundingVolume;
 
 use bevy::math::IVec3;
 
-#[derive(Debug, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct IBounds3 {
     pub min: IVec3,
     pub max: IVec3,

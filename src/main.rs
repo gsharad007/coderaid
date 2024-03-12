@@ -1,5 +1,6 @@
 mod ibounds3;
 
+mod game_nav_plugin;
 mod game_bots_plugin;
 mod game_cells_plugin;
 mod game_coordinates_utils;
@@ -10,6 +11,7 @@ mod camera_controller_plugin;
 mod camera_setup_plugin;
 
 mod visual_bots_plugin;
+mod visual_scene_plugin;
 
 use bevy::prelude::PluginGroup;
 use bevy::utils::default;
@@ -33,6 +35,7 @@ use camera_setup_plugin::CameraSetupPlugin;
 use game_scene_plugin::SceneElementsPlugin;
 use game_setup_data::GameSetupData;
 use visual_bots_plugin::VisualBotsPlugin;
+use visual_scene_plugin::VisualSceneElementsPlugin;
 
 fn main() {
     App::new()
@@ -61,7 +64,7 @@ fn main() {
         .add_plugins((CameraSetupPlugin, CameraControllerPlugin))
         .add_plugins(SceneElementsPlugin)
         .add_plugins(BotsPlugin)
-        .add_plugins(VisualBotsPlugin)
+        .add_plugins((VisualBotsPlugin, VisualSceneElementsPlugin))
         // .insert_resource(WindowDescriptor {
         //     title: "CodeRaid".to_string(),
         //     ..default()

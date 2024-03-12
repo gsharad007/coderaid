@@ -7,11 +7,10 @@ pub struct GameSetupData;
 
 impl Plugin for GameSetupData {
     fn build(&self, app: &mut App) {
-        _ = app.init_resource::<MapData>();
     }
 }
 
-#[derive(Resource, Debug, Default)]
+#[derive(Resource, Copy, Clone, Debug, Default)]
 pub struct MapData {
     pub bounds: IBounds3,
 }

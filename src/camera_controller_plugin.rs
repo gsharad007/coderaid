@@ -47,13 +47,13 @@ impl Default for CameraLooking {
 
 /// Sets up a perspective camera with default parameters
 #[allow(clippy::needless_pass_by_value)]
-fn setup_panning_orbiting_camera(mut commands: Commands, query: Query<Entity, With<Camera>>) {
-    for camera_entity in &query {
+fn setup_panning_orbiting_camera(mut commands: Commands, query: Query<(Entity, &Transform), With<Camera>>) {
+    for (camera_entity, camera_transform) in &query {
         _ = commands.entity(camera_entity).insert((
             CameraTarget::default(),
             CameraLooking {
-                look_from: Vec3::splat(16.),
-                ..default()
+                look_from: camera_transform.translation,
+                up: camera_transform.up().try_normalize().unwrap_or(Vec3::Y),
             },
         ));
     }

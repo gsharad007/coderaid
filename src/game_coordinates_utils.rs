@@ -95,8 +95,8 @@ impl AxisOrientedCellCoords {
     }
 
     #[inline]
-    pub fn from_cell_indices(cell_indices: CellCoords) -> Self {
-        let pos = cell_indices.as_ivec3() * CELLS_POSITION_AXIS_ORIENTATION;
+    pub fn from_cell_coords(cell_coords: CellCoords) -> Self {
+        let pos = cell_coords.as_ivec3() * CELLS_POSITION_AXIS_ORIENTATION;
         Self::from_ivec3(pos)
     }
 
@@ -132,63 +132,63 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_cell_indices_new() {
-        let cell_indices = CellCoords::new(1, 2, 3);
-        assert_eq!(cell_indices.x, 1);
-        assert_eq!(cell_indices.y, 2);
-        assert_eq!(cell_indices.z, 3);
+    fn test_cell_coords_new() {
+        let cell_coords = CellCoords::new(1, 2, 3);
+        assert_eq!(cell_coords.x, 1);
+        assert_eq!(cell_coords.y, 2);
+        assert_eq!(cell_coords.z, 3);
     }
 
     #[test]
-    fn test_cell_indices_from_ivec3() {
+    fn test_cell_coords_from_ivec3() {
         let ivec3 = IVec3::new(4, 5, 6);
-        let cell_indices = CellCoords::from_ivec3(ivec3);
-        assert_eq!(cell_indices.x, 4);
-        assert_eq!(cell_indices.y, 5);
-        assert_eq!(cell_indices.z, 6);
+        let cell_coords = CellCoords::from_ivec3(ivec3);
+        assert_eq!(cell_coords.x, 4);
+        assert_eq!(cell_coords.y, 5);
+        assert_eq!(cell_coords.z, 6);
     }
 
     #[test]
-    fn test_cell_indices_as_vec3() {
-        let cell_indices = CellCoords::new(1, 2, 3);
-        let vec3 = cell_indices.as_vec3();
+    fn test_cell_coords_as_vec3() {
+        let cell_coords = CellCoords::new(1, 2, 3);
+        let vec3 = cell_coords.as_vec3();
         assert_eq!(vec3, Vec3::new(1.0, 2.0, 3.0));
     }
 
     #[test]
-    fn test_cell_indices_as_ivec3() {
-        let cell_indices = CellCoords::new(1, 2, 3);
-        let ivec3 = cell_indices.as_ivec3();
+    fn test_cell_coords_as_ivec3() {
+        let cell_coords = CellCoords::new(1, 2, 3);
+        let ivec3 = cell_coords.as_ivec3();
         assert_eq!(ivec3, IVec3::new(1, 2, 3));
     }
 
     #[test]
-    fn test_cell_indices_as_game_coordinates_transform() {
-        let cell_indices = CellCoords::new(1, 2, 3);
-        let transform = cell_indices.as_game_coordinates_transform();
+    fn test_cell_coords_as_game_coordinates_transform() {
+        let cell_coords = CellCoords::new(1, 2, 3);
+        let transform = cell_coords.as_game_coordinates_transform();
         let expected_transform = Transform::from_translation(Vec3::new(1.0, 2.0, 3.0))
             .with_rotation(Quat::from_rotation_x(FRAC_PI_2));
         assert_eq!(transform, expected_transform);
     }
 
     #[test]
-    fn test_axis_oriented_cell_indices_from_cell_indices() {
-        let cell_indices = CellCoords::new(1, 2, 3);
-        let axis_oriented_cell_indices = AxisOrientedCellCoords::from_cell_indices(cell_indices);
-        assert_eq!(axis_oriented_cell_indices.x, 1);
-        assert_eq!(axis_oriented_cell_indices.y, -3);
-        assert_eq!(axis_oriented_cell_indices.z, -2);
+    fn test_axis_oriented_cell_coords_from_cell_coords() {
+        let cell_coords = CellCoords::new(1, 2, 3);
+        let axis_oriented_cell_coords = AxisOrientedCellCoords::from_cell_coords(cell_coords);
+        assert_eq!(axis_oriented_cell_coords.x, 1);
+        assert_eq!(axis_oriented_cell_coords.y, -3);
+        assert_eq!(axis_oriented_cell_coords.z, -2);
     }
 
     #[test]
-    fn test_axis_oriented_cell_indices_as_vec3() {
-        let axis_oriented_cell_indices = AxisOrientedCellCoords::new(1, 2, 3);
-        let vec3 = axis_oriented_cell_indices.as_vec3();
+    fn test_axis_oriented_cell_coords_as_vec3() {
+        let axis_oriented_cell_coords = AxisOrientedCellCoords::new(1, 2, 3);
+        let vec3 = axis_oriented_cell_coords.as_vec3();
         assert_eq!(vec3, Vec3::new(1.0, 2.0, 3.0));
     }
 
     #[test]
-    fn test_axis_oriented_cell_indices_as_cell_centered_visual_coordinates() {
+    fn test_axis_oriented_cell_coords_as_cell_centered_visual_coordinates() {
         assert_eq!(
             AxisOrientedCellCoords::ZERO.as_cell_centered_visual_coordinates(),
             Vec3::new(0.5, -0.5, 0.5)

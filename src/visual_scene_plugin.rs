@@ -140,15 +140,15 @@ fn spawn_scene_cells(
 ) {
     // let cells_offset = -Vec3::ZERO * CELLS_POSITION_AXIS_ORIENTATION;
     let cells_offset =
-        AxisOrientedCellCoords::from_cell_indices(CellCoords::from_ivec3(map_bounds.min));
+        AxisOrientedCellCoords::from_cell_coords(CellCoords::from_ivec3(map_bounds.min));
 
     for (level, z) in cells.array.iter().zip(0..) {
         for (row, y) in level.iter().zip(0..) {
             for (&cell_type, x) in row.iter().zip(0..) {
-                let cell_indices_offsetted =
-                    AxisOrientedCellCoords::from_cell_indices(CellCoords::new(x, y, z))
+                let cell_coords_offsetted =
+                    AxisOrientedCellCoords::from_cell_coords(CellCoords::new(x, y, z))
                         + cells_offset;
-                let cell_position = cell_indices_offsetted.as_cell_centered_visual_coordinates();
+                let cell_position = cell_coords_offsetted.as_cell_centered_visual_coordinates();
 
                 if cell_type == cell::EMPTY {
                     spawn_closed(commands, meshes, materials, cell_position);

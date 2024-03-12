@@ -93,14 +93,14 @@ fn spawn_bot_on_map(
     map_bounds: &IBounds3,
     rng: ResMut<GlobalEntropy<WyRand>>,
 ) -> (Transform, Entity) {
-    let cell_indices = generate_random_cell_indices(rng, map_bounds);
-    let transfrom = cell_indices.as_game_coordinates_transform();
+    let cell_coords = generate_random_cell_coords(rng, map_bounds);
+    let transfrom = cell_coords.as_game_coordinates_transform();
     let bot_entity = spawn_bot_with_transform(commands, transfrom);
     (transfrom, bot_entity)
 }
 
 #[allow(clippy::cast_possible_wrap)]
-fn generate_random_cell_indices(
+fn generate_random_cell_coords(
     mut rng: ResMut<'_, GlobalEntropy<WyRand>>,
     map_bounds: &IBounds3,
 ) -> CellCoords {

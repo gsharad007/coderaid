@@ -3,7 +3,7 @@ use core::f32::consts::FRAC_PI_2;
 use bevy::pbr::light_consts::lumens;
 use bevy::prelude::*;
 use bevy::{
-    app::{App, Plugin, Startup},
+    app::{App, Plugin},
     asset::Assets,
     ecs::system::{Commands, ResMut},
     math::Vec3,
@@ -14,7 +14,7 @@ use bevy::{
 
 use crate::game_cells_plugin::cell;
 use crate::game_cells_plugin::Cells;
-use crate::game_coordinates_utils::{AxisOrientedCellCoords, CellCoords, CELL_SIZE};
+use crate::game_coordinates_utils::{CellCoords, CELL_SIZE};
 use crate::game_scene_plugin::CellsSpawnedEvent;
 use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
@@ -147,12 +147,10 @@ fn spawn_scene_cells(
     for (level, z) in cells.array.iter().zip(0..) {
         for (row, y) in level.iter().zip(0..) {
             for (&cell_type, x) in row.iter().zip(0..) {
-                let cell_coords_offsetted = AxisOrientedCellCoords::from_cell_coords(
-                    CellCoords::from_cell_indices(IVec3::new(x, y, z), map_bounds),
-                );
+                let cell_coords = CellCoords::from_cell_indices(IVec3::new(x, y, z), map_bounds);
                 // let cell_position = cell_coords_offsetted.as_cell_centered_visual_coordinates();
-                let cell_position = cell_coords_offsetted.as_vec3();
-                println!("({x} {y} {z}) => {cell_coords_offsetted:?} => {cell_position:?}");
+                let cell_position = cell_coords.as_game_coordinates();
+                println!("({x} {y} {z}) => {cell_coords:?} => {cell_position:?}");
 
                 if cell_type == cell::EMPTY {
                     spawn_closed(commands, meshes, materials, cell_position);

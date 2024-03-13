@@ -75,6 +75,7 @@ impl Cells {
             .map(|level| {
                 level
                     .lines()
+                    .rev()
                     .filter(|line| !line.is_empty())
                     .map(|line| line.chars().map(cell_char_to_cell_type).collect_vec())
                     .collect_vec()
@@ -93,7 +94,7 @@ impl Cells {
     }
 
     #[allow(clippy::cast_sign_loss)]
-    pub fn get(&self, coords: IVec3) -> Option<cell::Type> {
+    pub fn get(&self, coords: IVec3) -> Option<&cell::Type> {
         if coords.x >= 0
             && coords.x < self.size.x
             && coords.y >= 0
@@ -102,9 +103,14 @@ impl Cells {
             && coords.z < self.size.z
             && (coords.z as usize) < self.array.len()
             && (coords.y as usize) < self.array.get(coords.z as usize)?.len()
-            && (coords.x as usize) < self.array.get(coords.z as usize)?.get(coords.y as usize)?.len()
+            && (coords.x as usize)
+                < self
+                    .array
+                    .get(coords.z as usize)?
+                    .get(coords.y as usize)?
+                    .len()
         {
-            Some(self.array[coords.z as usize][coords.y as usize][coords.x as usize])
+            self.array.get(coords.z as usize)?.get(coords.y as usize)?.get(coords.x as usize)
         } else {
             None
         }

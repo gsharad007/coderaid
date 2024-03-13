@@ -155,17 +155,17 @@ fn spawn_scene_cells(
                 if cell_type == cell::EMPTY {
                     spawn_closed(commands, meshes, materials, cell_position);
                 } else {
-                    if cell_type.is_closed(cell::OPEN_POS_X) {
-                        spawn_wall_pos_x(commands, meshes, materials, cell_position);
-                    }
                     if cell_type.is_closed(cell::OPEN_NEG_X) {
                         spawn_wall_neg_x(commands, meshes, materials, cell_position);
                     }
-                    if cell_type.is_closed(cell::OPEN_POS_Y) {
-                        spawn_wall_pos_y(commands, meshes, materials, cell_position);
+                    if cell_type.is_closed(cell::OPEN_POS_X) {
+                        spawn_wall_pos_x(commands, meshes, materials, cell_position);
                     }
                     if cell_type.is_closed(cell::OPEN_NEG_Y) {
                         spawn_wall_neg_y(commands, meshes, materials, cell_position);
+                    }
+                    if cell_type.is_closed(cell::OPEN_POS_Y) {
+                        spawn_wall_pos_y(commands, meshes, materials, cell_position);
                     }
                     // if cell_type.is_closed(cell::OPEN_POS_Z) {
                     //     spawn_wall_pos_z(commands, meshes, materials, pos);
@@ -220,7 +220,7 @@ fn spawn_wall_pos_y(
         meshes,
         materials,
         position,
-        Quat::from_rotation_x(-1. * FRAC_PI_2),
+        Quat::from_rotation_x(-3. * FRAC_PI_2),
     );
 }
 
@@ -235,7 +235,7 @@ fn spawn_wall_neg_y(
         meshes,
         materials,
         position,
-        Quat::from_rotation_x(-3. * FRAC_PI_2),
+        Quat::from_rotation_x(-1. * FRAC_PI_2),
     );
 }
 

@@ -11,7 +11,9 @@ use crate::game_coordinates_utils::CellCoords;
 use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
 
-const BOT_SPAWNING_INTERVAL: f32 = 2.;
+const BOT_SPAWNING_INTERVAL: f32 = 0.5;
+const BOT_LOGIC_UPDATE_INTERVAL: f32 = 0.5;
+
 const BOT_MOVEMENT_SPEED: f32 = 1.;
 
 #[derive(Debug)]
@@ -22,6 +24,7 @@ impl Plugin for BotsPlugin {
         _ = app
             .add_event::<BotSpawnedEvent>()
             .init_resource::<BotSpawnerTimer>()
+            .init_resource::<BotLogicUpdateTimer>()
             // .add_systems(Startup, bots_startup)
             .add_systems(Update, (bots_spawning_system, bots_movement_system));
     }
@@ -42,8 +45,17 @@ struct BotSpawnerTimer(Timer);
 
 impl Default for BotSpawnerTimer {
     fn default() -> Self {
+        Self(Timer::from_seconds(BOT_SPAWNING_INTERVAL, TimerMode::Once))
+    }
+}
+
+#[derive(Resource, Debug)]
+struct BotLogicUpdateTimer(Timer);
+
+impl Default for BotLogicUpdateTimer {
+    fn default() -> Self {
         Self(Timer::from_seconds(
-            BOT_SPAWNING_INTERVAL,
+            BOT_LOGIC_UPDATE_INTERVAL,
             TimerMode::Repeating,
         ))
     }
@@ -58,22 +70,19 @@ fn bots_spawning_system(
     time: Res<Time>,
     commands: Commands,
     map_data: Res<MapData>,
-    bot_spawner_timer: ResMut<BotSpawnerTimer>,
+    mut bot_spawner_timer: ResMut<BotSpawnerTimer>,
     bot_spawned_writer: EventWriter<BotSpawnedEvent>,
     rng: ResMut<GlobalEntropy<WyRand>>,
 ) {
     // Update the timer with the time elapsed since the last update
-    if bot_spawner_timer_just_finishes(time.delta(), bot_spawner_timer) {
+    if timer_just_finishes(time.delta(), &mut bot_spawner_timer.0) {
         // Timer has finished, so spawn a new bot
         spawn_bot_on_map_trigger_event(commands, &map_data.bounds, bot_spawned_writer, rng);
     }
 }
 
-fn bot_spawner_timer_just_finishes(
-    time_delta: Duration,
-    mut bot_spawner_timer: ResMut<BotSpawnerTimer>,
-) -> bool {
-    bot_spawner_timer.0.tick(time_delta).just_finished()
+fn timer_just_finishes(time_delta: Duration, timer: &mut Timer) -> bool {
+    timer.tick(time_delta).just_finished()
 }
 
 fn spawn_bot_on_map_trigger_event(
@@ -125,41 +134,48 @@ fn bots_movement_system(
     time: Res<Time>,
     cells: Res<Cells>,
     map_data: Res<MapData>,
+    mut bot_logic_update_timer: ResMut<BotLogicUpdateTimer>,
     mut query: Query<&mut Transform, With<Bot>>,
 ) {
     for mut transform in &mut query {
-        if !can_move_in_direction(
-            transform.translation,
-            transform.forward(),
-            &cells,
-            map_data.bounds,
-        ) {
-            if can_move_in_direction(
-                transform.translation,
-                transform.right(),
-                &cells,
-                map_data.bounds,
-            ) {
-                transform.rotate_z(FRAC_PI_2);
-            } else if can_move_in_direction(
-                transform.translation,
-                transform.back(),
-                &cells,
-                map_data.bounds,
-            ) {
-                transform.rotate_z(2. * FRAC_PI_2);
-            } else if can_move_in_direction(
-                transform.translation,
-                transform.left(),
-                &cells,
-                map_data.bounds,
-            ) {
-                transform.rotate_z(3. * FRAC_PI_2);
-            }
+        if timer_just_finishes(time.delta(), &mut bot_logic_update_timer.0) {
+            update_navigation_component(&mut transform, &cells, &map_data);
         }
 
         let move_delta = transform.forward() * BOT_MOVEMENT_SPEED * time.delta_seconds();
         transform.translation += move_delta;
+    }
+}
+
+fn update_navigation_component(transform: &mut Mut<Transform>, cells: &Res<Cells>, map_data: &Res<MapData>) {
+    if !can_move_in_direction(
+        transform.translation,
+        transform.forward(),
+        cells,
+        map_data.bounds,
+    ) {
+        if can_move_in_direction(
+            transform.translation,
+            transform.right(),
+            cells,
+            map_data.bounds,
+        ) {
+            transform.rotate_z(-FRAC_PI_2);
+        } else if can_move_in_direction(
+            transform.translation,
+            transform.back(),
+            cells,
+            map_data.bounds,
+        ) {
+            transform.rotate_z(2. * -FRAC_PI_2);
+        } else if can_move_in_direction(
+            transform.translation,
+            transform.left(),
+            cells,
+            map_data.bounds,
+        ) {
+            transform.rotate_z(3. * -FRAC_PI_2);
+        }
     }
 }
 
@@ -176,7 +192,8 @@ fn can_move_in_direction(
         // TODO: the below will fail if the direction is equivalent in multiple axis but for now since we are not
         // interpolating/sleeping it will just move in a straight line
         let move_direction = (*forward / forward.abs().max_element()).as_ivec3();
-        if let Some(forward_cell_type) = cells.get(cell_indices + move_direction) {
+        let forward_cell_coords = cell_indices + move_direction;
+        if let Some(forward_cell_type) = cells.get(forward_cell_coords) {
             let result = match move_direction {
                 IVec3::X => {
                     current_cell_type.is_open(cell::OPEN_POS_X)
@@ -204,6 +221,7 @@ fn can_move_in_direction(
                 }
                 _ => false,
             };
+            println!("{position:?} => {cell_coords:?} => {cell_indices:?} => ({forward:?} => {move_direction:?}) => {forward_cell_coords:?} => {current_cell_type:?} => {forward_cell_type:?} => {result}");
             return result;
         }
     }

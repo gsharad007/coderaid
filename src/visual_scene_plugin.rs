@@ -239,6 +239,7 @@ fn spawn_wall_neg_y(
     );
 }
 
+#[allow(dead_code)]
 fn spawn_wall_pos_z(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,

@@ -1,8 +1,8 @@
 use core::f32::consts::FRAC_PI_2;
-use derive_more::{Add, Neg, Sub};
+use derive_more::{Add, Sub};
 
 use bevy::{
-    math::{IVec3, Quat, UVec3, Vec3},
+    math::{IVec3, Quat, Vec3},
     transform::components::Transform,
 };
 

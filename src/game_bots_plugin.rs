@@ -12,7 +12,7 @@ use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
 
 const BOT_SPAWNING_INTERVAL: f32 = 0.5;
-const BOT_LOGIC_UPDATE_INTERVAL: f32 = 0.5;
+const BOT_LOGIC_UPDATE_INTERVAL: f32 = 0.25;
 
 const BOT_MOVEMENT_SPEED: f32 = 1.;
 
@@ -221,7 +221,7 @@ fn can_move_in_direction(
                 }
                 _ => false,
             };
-            println!("{position:?} => {cell_coords:?} => {cell_indices:?} => ({forward:?} => {move_direction:?}) => {forward_cell_coords:?} => {current_cell_type:?} => {forward_cell_type:?} => {result}");
+            // println!("{position:?} => {cell_coords:?} => {cell_indices:?} => ({forward:?} => {move_direction:?}) => {forward_cell_coords:?} => {current_cell_type:?} => {forward_cell_type:?} => {result}");
             return result;
         }
     }

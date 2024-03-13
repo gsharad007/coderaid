@@ -6,7 +6,7 @@ use crate::ibounds3::IBounds3;
 pub struct GameSetupData;
 
 impl Plugin for GameSetupData {
-    fn build(&self, app: &mut App) {
+    fn build(&self, _app: &mut App) {
     }
 }
 

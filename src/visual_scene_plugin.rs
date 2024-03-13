@@ -150,7 +150,7 @@ fn spawn_scene_cells(
                 let cell_coords = CellCoords::from_cell_indices(IVec3::new(x, y, z), map_bounds);
                 // let cell_position = cell_coords_offsetted.as_cell_centered_visual_coordinates();
                 let cell_position = cell_coords.as_game_coordinates();
-                println!("({x} {y} {z}) => {cell_coords:?} => {cell_position:?}");
+                // println!("({x} {y} {z}) => {cell_coords:?} => {cell_position:?}");
 
                 if cell_type == cell::EMPTY {
                     spawn_closed(commands, meshes, materials, cell_position);

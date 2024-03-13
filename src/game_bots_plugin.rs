@@ -1,3 +1,4 @@
+use core::f32::consts::FRAC_PI_2;
 use core::time::Duration;
 
 use bevy::prelude::*;
@@ -5,6 +6,7 @@ use bevy_prng::WyRand;
 use bevy_rand::resource::GlobalEntropy;
 use rand_core::RngCore;
 
+use crate::game_cells_plugin::{cell, Cells};
 use crate::game_coordinates_utils::CellCoords;
 use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
@@ -101,11 +103,12 @@ fn spawn_bot_on_map(
 
 #[allow(clippy::cast_possible_wrap)]
 fn generate_random_cell_coords(
-    mut rng: ResMut<'_, GlobalEntropy<WyRand>>,
+    mut rng: ResMut<GlobalEntropy<WyRand>>,
     map_bounds: &IBounds3,
 ) -> CellCoords {
     let size = map_bounds.size().as_uvec3();
-    let random_coords = UVec3::new(rng.next_u32(), rng.next_u32(), rng.next_u32());
+    let random_coords = (-map_bounds.min).as_uvec3();
+    // let random_coords = UVec3::new(rng.next_u32(), rng.next_u32(), rng.next_u32());
     let random_coords_limited = random_coords % size;
     CellCoords::from_ivec3(random_coords_limited.as_ivec3() + map_bounds.min)
 }
@@ -118,9 +121,91 @@ fn spawn_bot_with_transform(mut commands: Commands, transfrom: Transform) -> Ent
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn bots_movement_system(time: Res<Time>, mut query: Query<&mut Transform, With<Bot>>) {
+fn bots_movement_system(
+    time: Res<Time>,
+    cells: Res<Cells>,
+    map_data: Res<MapData>,
+    mut query: Query<&mut Transform, With<Bot>>,
+) {
     for mut transform in &mut query {
+        if !can_move_in_direction(
+            transform.translation,
+            transform.forward(),
+            &cells,
+            map_data.bounds,
+        ) {
+            if can_move_in_direction(
+                transform.translation,
+                transform.right(),
+                &cells,
+                map_data.bounds,
+            ) {
+                transform.rotate_z(FRAC_PI_2);
+            } else if can_move_in_direction(
+                transform.translation,
+                transform.back(),
+                &cells,
+                map_data.bounds,
+            ) {
+                transform.rotate_z(2. * FRAC_PI_2);
+            } else if can_move_in_direction(
+                transform.translation,
+                transform.left(),
+                &cells,
+                map_data.bounds,
+            ) {
+                transform.rotate_z(3. * FRAC_PI_2);
+            }
+        }
+
         let move_delta = transform.forward() * BOT_MOVEMENT_SPEED * time.delta_seconds();
         transform.translation += move_delta;
     }
+}
+
+fn can_move_in_direction(
+    position: Vec3,
+    forward: Direction3d,
+    cells: &Res<Cells>,
+    bounds: IBounds3,
+) -> bool {
+    let cell_coords = CellCoords::from_game_coordinates(position);
+    let cell_indices = cell_coords.as_cell_indices(bounds);
+
+    if let Some(current_cell_type) = cells.get(cell_indices) {
+        // TODO: the below will fail if the direction is equivalent in multiple axis but for now since we are not
+        // interpolating/sleeping it will just move in a straight line
+        let move_direction = (*forward / forward.abs().max_element()).as_ivec3();
+        if let Some(forward_cell_type) = cells.get(cell_indices + move_direction) {
+            let result = match move_direction {
+                IVec3::X => {
+                    current_cell_type.is_open(cell::OPEN_POS_X)
+                        && forward_cell_type.is_open(cell::OPEN_NEG_X)
+                }
+                IVec3::Y => {
+                    current_cell_type.is_open(cell::OPEN_POS_Y)
+                        && forward_cell_type.is_open(cell::OPEN_NEG_Y)
+                }
+                IVec3::Z => {
+                    current_cell_type.is_open(cell::OPEN_POS_Z)
+                        && forward_cell_type.is_open(cell::OPEN_NEG_Z)
+                }
+                IVec3::NEG_X => {
+                    current_cell_type.is_open(cell::OPEN_NEG_X)
+                        && forward_cell_type.is_open(cell::OPEN_POS_X)
+                }
+                IVec3::NEG_Y => {
+                    current_cell_type.is_open(cell::OPEN_NEG_Y)
+                        && forward_cell_type.is_open(cell::OPEN_POS_Y)
+                }
+                IVec3::NEG_Z => {
+                    current_cell_type.is_open(cell::OPEN_NEG_Z)
+                        && forward_cell_type.is_open(cell::OPEN_POS_Z)
+                }
+                _ => false,
+            };
+            return result;
+        }
+    }
+    false
 }

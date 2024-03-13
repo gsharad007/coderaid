@@ -32,7 +32,7 @@ impl Plugin for CameraSetupPlugin {
 /// Sets up a perspective camera with default parameters
 fn setup_perspective_camera_3d(mut commands: Commands) {
     _ = commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(10., -10., 12.).looking_at(Vec3::ZERO, Vec3::Z),
+        transform: Transform::from_xyz(8., -8., 16.).looking_at(Vec3::ZERO, Vec3::Z),
         projection: PerspectiveProjection::default().into(),
         ..default()
     });

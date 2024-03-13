@@ -16,6 +16,44 @@ pub mod cell {
     pub const OPEN_POS_Y: Type = Type(0b1 << 3);
     pub const OPEN_NEG_Z: Type = Type(0b1 << 4);
     pub const OPEN_POS_Z: Type = Type(0b1 << 5);
+
+    impl Type {
+        /// Checks if the given direction is open.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// # use your_crate::Type;
+        /// # let example = OPEN_NEG_X | OPEN_NEG_Y | OPEN_NEG_Z; // assuming Type has a new() method
+        /// assert!(example.is_open(OPEN_NEG_X)); // assuming Type has a North variant
+        /// assert!(example.is_open(OPEN_NEG_Y)); // assuming Type has a North variant
+        /// assert!(example.is_open(OPEN_NEG_Z)); // assuming Type has a North variant
+        /// assert!(!example.is_open(OPEN_POS_X)); // assuming Type has a South variant
+        /// assert!(!example.is_open(OPEN_POS_Y)); // assuming Type has a South variant
+        /// assert!(!example.is_open(OPEN_POS_X)); // assuming Type has a South variant
+        /// ```
+        pub fn is_open(self, direction: Self) -> bool {
+            self & direction == direction
+        }
+
+        /// Checks if the given direction is open.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// # use your_crate::Type;
+        /// # let example = OPEN_POS_X | OPEN_POS_Y | OPEN_POS_Z; // assuming Type has a new() method
+        /// assert!(example.is_closed(OPEN_NEG_X)); // assuming Type has a North variant
+        /// assert!(example.is_closed(OPEN_NEG_Y)); // assuming Type has a North variant
+        /// assert!(example.is_closed(OPEN_NEG_Z)); // assuming Type has a North variant
+        /// assert!(!example.is_closed(OPEN_POS_X)); // assuming Type has a South variant
+        /// assert!(!example.is_closed(OPEN_POS_Y)); // assuming Type has a South variant
+        /// assert!(!example.is_closed(OPEN_POS_X)); // assuming Type has a South variant
+        /// ```
+        pub fn is_closed(self, direction: Self) -> bool {
+            !self.is_open(direction)
+        }
+    }
 }
 
 #[derive(Resource, Debug)]
@@ -52,6 +90,24 @@ impl Cells {
             "Map Cells Too big {x:?} {y:?} {z:?}"
         );
         Self::new(cells, IVec3::new(x as i32, y as i32, z as i32))
+    }
+
+    #[allow(clippy::cast_sign_loss)]
+    pub fn get(&self, coords: IVec3) -> Option<cell::Type> {
+        if coords.x >= 0
+            && coords.x < self.size.x
+            && coords.y >= 0
+            && coords.y < self.size.y
+            && coords.z >= 0
+            && coords.z < self.size.z
+            && (coords.z as usize) < self.array.len()
+            && (coords.y as usize) < self.array.get(coords.z as usize)?.len()
+            && (coords.x as usize) < self.array.get(coords.z as usize)?.get(coords.y as usize)?.len()
+        {
+            Some(self.array[coords.z as usize][coords.y as usize][coords.x as usize])
+        } else {
+            None
+        }
     }
 }
 

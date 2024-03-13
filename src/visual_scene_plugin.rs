@@ -138,37 +138,41 @@ fn spawn_scene_cells(
     cells: &Cells,
     map_bounds: &IBounds3,
 ) {
-    // let cells_offset = -Vec3::ZERO * CELLS_POSITION_AXIS_ORIENTATION;
-    let cells_offset =
-        AxisOrientedCellCoords::from_cell_coords(CellCoords::from_ivec3(map_bounds.min));
+    // // let cells_offset = -Vec3::ZERO * CELLS_POSITION_AXIS_ORIENTATION;
+    // let cells_offset = AxisOrientedCellCoords::from_cell_coords(CellCoords::from_cell_indices(
+    //     IVec3::ZERO,
+    //     map_bounds,
+    // ));
 
     for (level, z) in cells.array.iter().zip(0..) {
         for (row, y) in level.iter().zip(0..) {
             for (&cell_type, x) in row.iter().zip(0..) {
-                let cell_coords_offsetted =
-                    AxisOrientedCellCoords::from_cell_coords(CellCoords::new(x, y, z))
-                        + cells_offset;
-                let cell_position = cell_coords_offsetted.as_cell_centered_visual_coordinates();
+                let cell_coords_offsetted = AxisOrientedCellCoords::from_cell_coords(
+                    CellCoords::from_cell_indices(IVec3::new(x, y, z), map_bounds),
+                );
+                // let cell_position = cell_coords_offsetted.as_cell_centered_visual_coordinates();
+                let cell_position = cell_coords_offsetted.as_vec3();
+                println!("({x} {y} {z}) => {cell_coords_offsetted:?} => {cell_position:?}");
 
                 if cell_type == cell::EMPTY {
                     spawn_closed(commands, meshes, materials, cell_position);
                 } else {
-                    if cell_type & cell::OPEN_POS_X != cell::OPEN_POS_X {
+                    if cell_type.is_closed(cell::OPEN_POS_X) {
                         spawn_wall_pos_x(commands, meshes, materials, cell_position);
                     }
-                    if cell_type & cell::OPEN_NEG_X != cell::OPEN_NEG_X {
+                    if cell_type.is_closed(cell::OPEN_NEG_X) {
                         spawn_wall_neg_x(commands, meshes, materials, cell_position);
                     }
-                    if cell_type & cell::OPEN_POS_Y != cell::OPEN_POS_Y {
+                    if cell_type.is_closed(cell::OPEN_POS_Y) {
                         spawn_wall_pos_y(commands, meshes, materials, cell_position);
                     }
-                    if cell_type & cell::OPEN_NEG_Y != cell::OPEN_NEG_Y {
+                    if cell_type.is_closed(cell::OPEN_NEG_Y) {
                         spawn_wall_neg_y(commands, meshes, materials, cell_position);
                     }
-                    // if cell_type & cell::OPEN_POS_Z != cell::OPEN_POS_Z {
+                    // if cell_type.is_closed(cell::OPEN_POS_Z) {
                     //     spawn_wall_pos_z(commands, meshes, materials, pos);
                     // }
-                    if cell_type & cell::OPEN_NEG_Z != cell::OPEN_NEG_Z {
+                    if cell_type.is_closed(cell::OPEN_NEG_Z) {
                         spawn_wall_neg_z(commands, meshes, materials, cell_position);
                     }
                 }

@@ -1,3 +1,4 @@
+use bevy::pbr::light_consts::lumens;
 use bevy::prelude::*;
 use bevy::{
     app::{App, Plugin},
@@ -32,12 +33,67 @@ fn on_bot_spawned_listener_system(
     for event in bot_spawned_reader.read() {
         if let Some(mut entity_command) = commands.get_entity(event.entity) {
             _ = entity_command.with_children(|parent| {
-                _ = parent.spawn(PbrBundle {
-                    mesh: meshes.add(Cylinder::new(0.4, 0.1)),
-                    material: materials.add(Color::rgb(0.6, 0.7, 0.9)),
-                    transform: Transform::from_xyz(0.5, 0.5, 0.5),
-                    ..default()
-                });
+                _ = parent
+                    .spawn(PbrBundle {
+                        mesh: meshes.add(Cylinder::new(0.35, 0.1)),
+                        material: materials.add(Color::rgb(0.6, 0.7, 0.9)),
+                        // transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                        // transform: Transform::from_xyz(0.5, 0.5, 0.5),
+                        ..default()
+                    })
+                    .with_children(|parent| {
+                        _ = parent
+                            .spawn(PbrBundle {
+                                mesh: meshes.add(Cylinder::new(0.05, 0.05)),
+                                material: materials.add(Color::rgb(0.9, 0.9, 0.9)),
+                                transform: Transform::from_xyz(0.0, 0.1, 0.25),
+                                ..default()
+                            })
+                            .with_children(|parent| {
+                                _ = parent.spawn(PointLightBundle {
+                                    point_light: PointLight {
+                                        color: Color::rgb(1.0, 1.0, 1.0),
+                                        intensity: lumens::LUMENS_PER_LED_WATTS * 1.,
+                                        ..default()
+                                    },
+                                    ..default()
+                                });
+                            });
+                        _ = parent
+                            .spawn(PbrBundle {
+                                mesh: meshes.add(Cylinder::new(0.05, 0.05)),
+                                material: materials.add(Color::rgb(0.1, 0.9, 0.1)),
+                                transform: Transform::from_xyz(0.25, 0.1, -0.2),
+                                ..default()
+                            })
+                            .with_children(|parent| {
+                                _ = parent.spawn(PointLightBundle {
+                                    point_light: PointLight {
+                                        color: Color::rgb(0.0, 1.0, 0.0),
+                                        intensity: lumens::LUMENS_PER_LED_WATTS * 1.,
+                                        ..default()
+                                    },
+                                    ..default()
+                                });
+                            });
+                        _ = parent
+                            .spawn(PbrBundle {
+                                mesh: meshes.add(Cylinder::new(0.05, 0.05)),
+                                material: materials.add(Color::rgb(0.9, 0.1, 0.1)),
+                                transform: Transform::from_xyz(-0.25, 0.1, -0.2),
+                                ..default()
+                            })
+                            .with_children(|parent| {
+                                _ = parent.spawn(PointLightBundle {
+                                    point_light: PointLight {
+                                        color: Color::rgb(1.0, 0.0, 0.0),
+                                        intensity: lumens::LUMENS_PER_LED_WATTS * 1.,
+                                        ..default()
+                                    },
+                                    ..default()
+                                });
+                            });
+                    });
             });
         }
     }

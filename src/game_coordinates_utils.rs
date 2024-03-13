@@ -2,9 +2,11 @@ use core::f32::consts::FRAC_PI_2;
 use derive_more::{Add, Neg, Sub};
 
 use bevy::{
-    math::{IVec3, Quat, Vec3},
+    math::{IVec3, Quat, UVec3, Vec3},
     transform::components::Transform,
 };
+
+use crate::ibounds3::IBounds3;
 
 #[derive(Debug, Clone, Copy, Add, Sub)]
 pub struct CellCoords {
@@ -26,6 +28,15 @@ impl CellCoords {
         Self::new(value.x, value.y, value.z)
     }
 
+    pub fn from_cell_indices(value: IVec3, bounds: &IBounds3) -> Self {
+        Self::from_ivec3(value + bounds.min)
+    }
+
+    #[inline]
+    pub fn from_game_coordinates(value: Vec3) -> Self {
+        Self::from_ivec3(value.as_ivec3())
+    }
+
     /// Casts all elements of `self` to `f32`.
     #[inline]
     #[allow(clippy::cast_precision_loss)]
@@ -33,15 +44,53 @@ impl CellCoords {
         Vec3::new(self.x as f32, self.y as f32, self.z as f32)
     }
 
-    /// Casts all elements of `self` to `f32`.
+    /// Converts into an `IVec3`.
+    ///
+    /// # Example
+    /// ```
+    /// let vec = Vec3::new(1.0, 2.0, 3.0);
+    /// let ivec = vec.as_ivec3();
+    /// assert_eq!(ivec, IVec3::new(1, 2, 3));
+    /// ```
     #[inline]
     pub const fn as_ivec3(&self) -> IVec3 {
         IVec3::new(self.x, self.y, self.z)
     }
 
+    /// Converts into an cell indices vector of type `UVec3`.
+    /// 1
+    /// # Example
+    /// ```
+    /// let vec = Vec3::new(1.0, 2.0, 3.0);
+    /// let ivec = vec.as_ivec3();
+    /// assert_eq!(ivec, IVec3::new(1, 2, 3));
+    /// ```
+    #[inline]
+    pub fn as_cell_indices(&self, bounds: IBounds3) -> IVec3 {
+        debug_assert!(
+            self.as_ivec3().cmpge(bounds.min).all() && self.as_ivec3().cmple(bounds.max).all(),
+            "CellCoords {self:?} is out of bounds {bounds:?}"
+        );
+        self.as_ivec3() - bounds.min
+    }
+
+    /// Converts into an game coordinates.
+    /// 1
+    /// # Example
+    /// ```
+    /// let vec = Vec3::new(1.0, 2.0, 3.0);
+    /// let ivec = vec.as_ivec3();
+    /// assert_eq!(ivec, IVec3::new(1, 2, 3));
+    /// ```
+    #[inline]
+    pub const fn as_game_coordinates(&self) -> Vec3 {
+        self.as_vec3()
+    }
+
     #[inline]
     pub fn as_game_coordinates_transform(&self) -> Transform {
-        Transform::from_translation(self.as_vec3()).with_rotation(Quat::from_rotation_x(FRAC_PI_2))
+        Transform::from_translation(self.as_game_coordinates())
+            .with_rotation(Quat::from_rotation_x(FRAC_PI_2))
     }
 }
 

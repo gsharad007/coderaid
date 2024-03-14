@@ -128,7 +128,7 @@ fn generate_random_cell_coords(
 }
 
 fn spawn_bot_with_transform(mut commands: Commands, transform: Transform) -> Entity {
-    let collider = Collider::cylinder(0.1, 0.25);
+    let collider = Collider::cylinder(0.2, 0.25);
     let bot_entity = commands
         .spawn((
             Bot {},
@@ -138,9 +138,9 @@ fn spawn_bot_with_transform(mut commands: Commands, transform: Transform) -> Ent
             collider,
             CollisionLayers::new([Layer::Bots], [Layer::Ground, Layer::Constructed]), // Bots collides with ground, and constructed layers
             Friction::new(0.1),
-            Restitution::new(0.2).with_combine_rule(CoefficientCombine::Multiply),
-            LinearDamping(0.1),
-            AngularDamping(0.1),
+            Restitution::new(0.0).with_combine_rule(CoefficientCombine::Multiply),
+            LinearDamping(0.2),
+            AngularDamping(0.2),
             // TODO: Remove this once we have proper thrust components
             ExternalImpulse::new(transform.forward() * BOT_MOVEMENT_SPEED / 10.),
         ))

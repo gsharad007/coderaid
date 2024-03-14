@@ -8,6 +8,7 @@ mod game_physics_layers;
 mod game_physics_plugin;
 mod game_scene_plugin;
 mod game_setup_data;
+mod game_mover_plugin;
 
 mod camera_controller_plugin;
 mod camera_setup_plugin;

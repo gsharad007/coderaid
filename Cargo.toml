@@ -6,10 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.13.*"
-rand_core = "0.6"
+bevy = "0.13"
 bevy_rand = "0.5"
 bevy_prng = { version = "0.5", features = ["wyrand"] }
+bevy_xpbd_3d = "0.4"
+
+rand_core = "0.6"
 derive_more = "*"
 itertools = "*"
 

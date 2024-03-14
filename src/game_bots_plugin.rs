@@ -4,10 +4,14 @@ use core::time::Duration;
 use bevy::prelude::*;
 use bevy_prng::WyRand;
 use bevy_rand::resource::GlobalEntropy;
+use bevy_xpbd_3d::components::{CollisionLayers, ExternalForce, RigidBody};
+use bevy_xpbd_3d::plugins::collision::Collider;
+use bevy_xpbd_3d::prelude::*;
 use rand_core::RngCore;
 
 use crate::game_cells_plugin::{cell, Cells};
 use crate::game_coordinates_utils::CellCoords;
+use crate::game_physics_layers::Layer;
 use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
 
@@ -15,6 +19,7 @@ const BOT_SPAWNING_INTERVAL: f32 = 0.5;
 const BOT_LOGIC_UPDATE_INTERVAL: f32 = 0.25;
 
 const BOT_MOVEMENT_SPEED: f32 = 1.;
+const BOT_MASS_DENSITY_SCALE: f32 = 0.25;
 
 #[derive(Debug)]
 pub struct BotsPlugin;
@@ -122,9 +127,23 @@ fn generate_random_cell_coords(
     CellCoords::from_ivec3(random_coords_limited.as_ivec3() + map_bounds.min)
 }
 
-fn spawn_bot_with_transform(mut commands: Commands, transfrom: Transform) -> Entity {
+fn spawn_bot_with_transform(mut commands: Commands, transform: Transform) -> Entity {
+    let collider = Collider::cylinder(0.1, 0.25);
     let bot_entity = commands
-        .spawn((Bot {}, SpatialBundle::from_transform(transfrom)))
+        .spawn((
+            Bot {},
+            SpatialBundle::from_transform(transform),
+            RigidBody::Dynamic,
+            MassPropertiesBundle::new_computed(&collider, BOT_MASS_DENSITY_SCALE),
+            collider,
+            CollisionLayers::new([Layer::Bots], [Layer::Ground, Layer::Constructed]), // Bots collides with ground, and constructed layers
+            Friction::new(0.1),
+            Restitution::new(0.2).with_combine_rule(CoefficientCombine::Multiply),
+            LinearDamping(0.1),
+            AngularDamping(0.1),
+            // TODO: Remove this once we have proper thrust components
+            ExternalImpulse::new(transform.forward() * BOT_MOVEMENT_SPEED / 10.),
+        ))
         .id();
     bot_entity
 }
@@ -142,12 +161,16 @@ fn bots_movement_system(
             update_navigation_component(&mut transform, &cells, &map_data);
         }
 
-        let move_delta = transform.forward() * BOT_MOVEMENT_SPEED * time.delta_seconds();
-        transform.translation += move_delta;
+        // let move_delta = transform.forward() * BOT_MOVEMENT_SPEED * time.delta_seconds();
+        // transform.translation += move_delta;
     }
 }
 
-fn update_navigation_component(transform: &mut Mut<Transform>, cells: &Res<Cells>, map_data: &Res<MapData>) {
+fn update_navigation_component(
+    transform: &mut Mut<Transform>,
+    cells: &Res<Cells>,
+    map_data: &Res<MapData>,
+) {
     if !can_move_in_direction(
         transform.translation,
         transform.forward(),

@@ -1,9 +1,11 @@
 mod ibounds3;
 
-mod game_nav_plugin;
 mod game_bots_plugin;
 mod game_cells_plugin;
 mod game_coordinates_utils;
+mod game_nav_plugin;
+mod game_physics_layers;
+mod game_physics_plugin;
 mod game_scene_plugin;
 mod game_setup_data;
 
@@ -32,6 +34,7 @@ use game_bots_plugin::BotsPlugin;
 
 use camera_controller_plugin::CameraControllerPlugin;
 use camera_setup_plugin::CameraSetupPlugin;
+use game_physics_plugin::PhysicsPlugin;
 use game_scene_plugin::SceneElementsPlugin;
 use game_setup_data::GameSetupData;
 use visual_bots_plugin::VisualBotsPlugin;
@@ -57,6 +60,7 @@ fn main() {
                     ..default()
                 }),
         )
+        .add_plugins(PhysicsPlugin)
         .add_plugins(FrameTimeDiagnosticsPlugin)
         .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins(EntropyPlugin::<WyRand>::default())

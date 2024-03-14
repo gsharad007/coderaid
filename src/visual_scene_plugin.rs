@@ -11,10 +11,13 @@ use bevy::{
     render::{color::Color, mesh::Mesh},
     transform::components::Transform,
 };
+use bevy_xpbd_3d::components::RigidBody;
+use bevy_xpbd_3d::prelude::*;
 
 use crate::game_cells_plugin::cell;
 use crate::game_cells_plugin::Cells;
 use crate::game_coordinates_utils::{CellCoords, CELL_SIZE};
+use crate::game_physics_layers::Layer;
 use crate::game_scene_plugin::CellsSpawnedEvent;
 use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
@@ -271,6 +274,7 @@ fn spawn_wall_neg_z(
 }
 
 const WALL_THICKNESS: f32 = 0.1; // Thickness of the wall
+const WALL_MASS_DENSITY_SCALE: f32 = 1.0;
 
 fn spawn_closed(
     commands: &mut Commands,
@@ -295,24 +299,38 @@ fn spawn_wall(
 ) {
     let offset = rotation.mul_vec3(Vec3::new(0.0, 0.0, -(0.5 - WALL_THICKNESS)));
 
+    let size = Vec3::new(
+        WALL_THICKNESS.mul_add(-2., CELL_SIZE),
+        WALL_THICKNESS.mul_add(-2., CELL_SIZE),
+        WALL_THICKNESS,
+    );
+    let collider = Collider::cuboid(size.x, size.y, size.z);
+
     _ = commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Cuboid::from_size(Vec3::new(
-                CELL_SIZE - WALL_THICKNESS,
-                CELL_SIZE - WALL_THICKNESS,
-                WALL_THICKNESS,
-            ))),
-            material: materials.add(Color::rgb(0.9, 0.9, 0.9)),
-            transform: Transform::from_translation(position + offset).with_rotation(rotation),
-            ..default()
-        })
+        .spawn((
+            PbrBundle {
+                mesh: meshes.add(Cuboid::from_size(size)),
+                material: materials.add(Color::rgb(0.9, 0.9, 0.9)),
+                transform: Transform::from_translation(position + offset).with_rotation(rotation),
+                ..default()
+            },
+            RigidBody::Static,
+            MassPropertiesBundle::new_computed(&collider, WALL_MASS_DENSITY_SCALE),
+            collider,
+            // Wals collides with everything ground, and constructed layers
+            CollisionLayers::new(
+                [Layer::Constructed],
+                [Layer::Ground, Layer::Constructed, Layer::Bots],
+            ),
+        ))
         .with_children(|parent| {
             _ = parent.spawn(PointLightBundle {
                 point_light: PointLight {
-                    color: Color::rgb(0.8, 0.8, 1.0),
-                    intensity: lumens::LUMENS_PER_LED_WATTS * 6.,
+                    color: Color::rgb(0.9, 0.8, 1.0),
+                    intensity: lumens::LUMENS_PER_LED_WATTS * 2.,
                     ..default()
                 },
+                transform: Transform::from_xyz(0.0, 0.0, WALL_THICKNESS),
                 ..default()
             });
         });

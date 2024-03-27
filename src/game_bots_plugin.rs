@@ -16,9 +16,9 @@ use crate::game_setup_data::MapData;
 use crate::ibounds3::IBounds3;
 
 const BOT_SPAWNING_INTERVAL: f32 = 0.5;
-const BOT_LOGIC_UPDATE_INTERVAL: f32 = 0.25;
+const BOT_LOGIC_UPDATE_INTERVAL: f32 = 0.5;
 
-const BOT_MOVEMENT_SPEED: f32 = 1.;
+const BOT_MOVEMENT_SPEED: f32 = 0.1;
 const BOT_MASS_DENSITY_SCALE: f32 = 0.25;
 
 #[derive(Debug)]
@@ -141,8 +141,6 @@ fn spawn_bot_with_transform(mut commands: Commands, transform: Transform) -> Ent
             Restitution::new(0.0).with_combine_rule(CoefficientCombine::Multiply),
             LinearDamping(0.2),
             AngularDamping(0.2),
-            // TODO: Remove this once we have proper thrust components
-            ExternalImpulse::new(transform.forward() * BOT_MOVEMENT_SPEED / 10.),
         ))
         .id();
     bot_entity
@@ -153,12 +151,35 @@ fn bots_movement_system(
     time: Res<Time>,
     cells: Res<Cells>,
     map_data: Res<MapData>,
+    mut commands: Commands,
     mut bot_logic_update_timer: ResMut<BotLogicUpdateTimer>,
-    mut query: Query<&mut Transform, With<Bot>>,
+    mut query: Query<
+        (
+            &mut Transform,
+            &mut LinearVelocity,
+            &mut AngularVelocity,
+            Entity,
+        ),
+        With<Bot>,
+    >,
 ) {
-    for mut transform in &mut query {
+    for (mut transform, mut linear_velocity, mut angular_velocity, entity) in &mut query {
         if timer_just_finishes(time.delta(), &mut bot_logic_update_timer.0) {
-            update_navigation_component(&mut transform, &cells, &map_data);
+            update_brakes_level0_component(
+                *transform,
+                &mut linear_velocity,
+                &mut angular_velocity,
+                &cells,
+                &map_data,
+            );
+            update_navigation_level1_component(&mut transform, &cells, &map_data);
+            update_forward_thruster_level1_component(
+                commands.reborrow(),
+                *transform,
+                entity,
+                &cells,
+                &map_data,
+            );
         }
 
         // let move_delta = transform.forward() * BOT_MOVEMENT_SPEED * time.delta_seconds();
@@ -166,7 +187,43 @@ fn bots_movement_system(
     }
 }
 
-fn update_navigation_component(
+fn update_brakes_level0_component(
+    transform: Transform,
+    linear_velocity: &mut Mut<LinearVelocity>,
+    angular_velocity: &mut Mut<AngularVelocity>,
+    cells: &Res<Cells>,
+    map_data: &Res<MapData>,
+) {
+    if !can_move_in_direction(
+        transform.translation,
+        transform.forward(),
+        cells,
+        map_data.bounds,
+    ) {
+        linear_velocity.0 = Vec3::ZERO;
+        angular_velocity.0 = Vec3::ZERO;
+    }
+}
+
+fn update_forward_thruster_level1_component(
+    mut commands: Commands,
+    transform: Transform,
+    entity: Entity,
+    cells: &Res<Cells>,
+    map_data: &Res<MapData>,
+) {
+    if can_move_in_direction(
+        transform.translation,
+        transform.forward(),
+        cells,
+        map_data.bounds,
+    ) {
+        let impulse = ExternalImpulse::new(transform.forward() * BOT_MOVEMENT_SPEED / 10.);
+        _ = commands.entity(entity).insert(impulse);
+    }
+}
+
+fn update_navigation_level1_component(
     transform: &mut Mut<Transform>,
     cells: &Res<Cells>,
     map_data: &Res<MapData>,

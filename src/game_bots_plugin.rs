@@ -4,7 +4,7 @@ use core::time::Duration;
 use bevy::prelude::*;
 use bevy_prng::WyRand;
 use bevy_rand::resource::GlobalEntropy;
-use bevy_xpbd_3d::components::{CollisionLayers, ExternalForce, RigidBody};
+use bevy_xpbd_3d::components::{CollisionLayers, RigidBody};
 use bevy_xpbd_3d::plugins::collision::Collider;
 use bevy_xpbd_3d::prelude::*;
 use rand_core::RngCore;
@@ -172,7 +172,7 @@ fn bots_movement_system(
                 &cells,
                 &map_data,
             );
-            update_navigation_level1_component(&mut transform, &cells, &map_data);
+            update_navigation_level2_component(&mut transform, &cells, &map_data);
             update_forward_thruster_level1_component(
                 commands.reborrow(),
                 *transform,
@@ -194,11 +194,11 @@ fn update_brakes_level0_component(
     cells: &Res<Cells>,
     map_data: &Res<MapData>,
 ) {
-    if !can_move_in_direction(
+    if !can_move_in_direction_vector(
         transform.translation,
         transform.forward(),
         cells,
-        map_data.bounds,
+        &map_data.bounds,
     ) {
         linear_velocity.0 = Vec3::ZERO;
         angular_velocity.0 = Vec3::ZERO;
@@ -212,98 +212,155 @@ fn update_forward_thruster_level1_component(
     cells: &Res<Cells>,
     map_data: &Res<MapData>,
 ) {
-    if can_move_in_direction(
+    if can_move_in_direction_vector(
         transform.translation,
         transform.forward(),
         cells,
-        map_data.bounds,
+        &map_data.bounds,
     ) {
         let impulse = ExternalImpulse::new(transform.forward() * BOT_MOVEMENT_SPEED / 10.);
         _ = commands.entity(entity).insert(impulse);
     }
 }
 
+#[allow(dead_code)]
 fn update_navigation_level1_component(
     transform: &mut Mut<Transform>,
     cells: &Res<Cells>,
     map_data: &Res<MapData>,
 ) {
-    if !can_move_in_direction(
-        transform.translation,
-        transform.forward(),
-        cells,
-        map_data.bounds,
-    ) {
-        if can_move_in_direction(
-            transform.translation,
-            transform.right(),
-            cells,
-            map_data.bounds,
-        ) {
+    let bounds = &map_data.bounds;
+
+    if !can_move_in_direction_vector(transform.translation, transform.forward(), cells, bounds) {
+        if can_move_in_direction_vector(transform.translation, transform.right(), cells, bounds) {
             transform.rotate_z(-FRAC_PI_2);
-        } else if can_move_in_direction(
+        } else if can_move_in_direction_vector(
             transform.translation,
             transform.back(),
             cells,
-            map_data.bounds,
+            bounds,
         ) {
             transform.rotate_z(2. * -FRAC_PI_2);
-        } else if can_move_in_direction(
+        } else if can_move_in_direction_vector(
             transform.translation,
             transform.left(),
             cells,
-            map_data.bounds,
+            bounds,
         ) {
             transform.rotate_z(3. * -FRAC_PI_2);
         }
     }
 }
 
-fn can_move_in_direction(
-    position: Vec3,
-    forward: Direction3d,
+#[allow(dead_code)]
+fn update_navigation_level2_component(
+    transform: &mut Mut<Transform>,
     cells: &Res<Cells>,
-    bounds: IBounds3,
-) -> bool {
-    let cell_coords = CellCoords::from_game_coordinates(position);
-    let cell_indices = cell_coords.as_cell_indices(bounds);
+    map_data: &Res<MapData>,
+) {
+    let bounds = &map_data.bounds;
+    let game_coords = transform.translation;
+    let src_cell_coords = CellCoords::from_game_coordinates(game_coords);
+    let src_cell_indices = src_cell_coords.as_cell_indices(bounds);
 
-    if let Some(current_cell_type) = cells.get(cell_indices) {
-        // TODO: the below will fail if the direction is equivalent in multiple axis but for now since we are not
-        // interpolating/sleeping it will just move in a straight line
-        let move_direction = (*forward / forward.abs().max_element()).as_ivec3();
-        let forward_cell_coords = cell_indices + move_direction;
-        if let Some(forward_cell_type) = cells.get(forward_cell_coords) {
-            let result = match move_direction {
-                IVec3::X => {
-                    current_cell_type.is_open(cell::OPEN_POS_X)
-                        && forward_cell_type.is_open(cell::OPEN_NEG_X)
-                }
-                IVec3::Y => {
-                    current_cell_type.is_open(cell::OPEN_POS_Y)
-                        && forward_cell_type.is_open(cell::OPEN_NEG_Y)
-                }
-                IVec3::Z => {
-                    current_cell_type.is_open(cell::OPEN_POS_Z)
-                        && forward_cell_type.is_open(cell::OPEN_NEG_Z)
-                }
-                IVec3::NEG_X => {
-                    current_cell_type.is_open(cell::OPEN_NEG_X)
-                        && forward_cell_type.is_open(cell::OPEN_POS_X)
-                }
-                IVec3::NEG_Y => {
-                    current_cell_type.is_open(cell::OPEN_NEG_Y)
-                        && forward_cell_type.is_open(cell::OPEN_POS_Y)
-                }
-                IVec3::NEG_Z => {
-                    current_cell_type.is_open(cell::OPEN_NEG_Z)
-                        && forward_cell_type.is_open(cell::OPEN_POS_Z)
-                }
-                _ => false,
-            };
-            // println!("{position:?} => {cell_coords:?} => {cell_indices:?} => ({forward:?} => {move_direction:?}) => {forward_cell_coords:?} => {current_cell_type:?} => {forward_cell_type:?} => {result}");
-            return result;
+    let directions = [
+        transform.forward(),
+        transform.right(),
+        transform.left(),
+        transform.back(),
+    ];
+
+    for (idx, &direction) in directions.iter().enumerate() {
+        let move_direction = calculate_move_direction_from_direction_vector(direction);
+        let dst_cell_indices = calculate_destination_cell_indices_from_move_direction(
+            src_cell_indices,
+            move_direction,
+        );
+        if can_move_to_cell(src_cell_indices, dst_cell_indices, cells) {
+            let up = transform.up();
+            let dst_cell_coords =
+                CellCoords::from_cell_indices(dst_cell_indices, bounds).as_game_coordinates();
+            let dst_cell_direction = dst_cell_coords - game_coords;
+            let to = (dst_cell_direction / 4.) + move_direction.as_vec3();
+            transform.look_to(to, *up);
+
+            println!("[{idx}] world_pos: {game_coords} => src: {src_cell_coords} => src_cell_indices: {src_cell_indices}, direction: {direction:?} => move_direction: {move_direction} => dst_cell_indices: {dst_cell_indices} => look_to: {dst_cell_direction}");
+
+            break;
         }
     }
-    false
+}
+
+fn can_move_in_direction_vector(
+    position: Vec3,
+    forward: Direction3d,
+    cells: &Cells,
+    bounds: &IBounds3,
+) -> bool {
+    let src_cell_coords = CellCoords::from_game_coordinates(position);
+    let src_cell_indices = src_cell_coords.as_cell_indices(bounds);
+
+    let move_direction = calculate_move_direction_from_direction_vector(forward);
+
+    debug_assert_eq!(move_direction.abs().max_element(), 1, "move_direction: {forward:?} => {move_direction:?} currently only support moves that can be adjucent to the source cell!");
+    debug_assert_eq!(move_direction.length_squared(), 1, "move_direction: {forward:?} => {move_direction:?} currently only support moves that can be adjucent to the source cell!");
+
+    can_move_in_direction(src_cell_indices, move_direction, cells)
+}
+
+fn can_move_to_cell(src_cell_indices: IVec3, dst_cell_indices: IVec3, cells: &Cells) -> bool {
+    let move_direction = dst_cell_indices - src_cell_indices;
+
+    debug_assert_eq!(move_direction.abs().max_element(), 1, "move_direction: {dst_cell_indices:?} - {src_cell_indices:?} => {move_direction:?} currently only support moves that can be adjucent to the source cell!");
+    debug_assert_eq!(move_direction.length_squared(), 1, "move_direction: {dst_cell_indices:?} - {src_cell_indices:?} => {move_direction:?} currently only support moves that can be adjucent to the source cell!");
+
+    can_move_in_direction(src_cell_indices, move_direction, cells)
+}
+
+fn can_move_in_direction(src_cell_indices: IVec3, move_direction: IVec3, cells: &Cells) -> bool {
+    debug_assert_eq!(move_direction.abs().max_element(), 1, "move_direction: {src_cell_indices:?} + {move_direction:?} currently only support moves that can be adjucent to the source cell!");
+    debug_assert_eq!(move_direction.length_squared(), 1, "move_direction: {src_cell_indices:?} + {move_direction:?} currently only support moves that can be adjucent to the source cell!");
+
+    let dst_cell_indices =
+        calculate_destination_cell_indices_from_move_direction(src_cell_indices, move_direction);
+
+    let src_cell_type = cells.get_or_open_all(src_cell_indices);
+    let dst_cell_type = cells.get_or_open_all(dst_cell_indices);
+
+    let result = match move_direction {
+        IVec3::X => {
+            src_cell_type.is_open(cell::OPEN_POS_X) && dst_cell_type.is_open(cell::OPEN_NEG_X)
+        }
+        IVec3::Y => {
+            src_cell_type.is_open(cell::OPEN_POS_Y) && dst_cell_type.is_open(cell::OPEN_NEG_Y)
+        }
+        IVec3::Z => {
+            src_cell_type.is_open(cell::OPEN_POS_Z) && dst_cell_type.is_open(cell::OPEN_NEG_Z)
+        }
+        IVec3::NEG_X => {
+            src_cell_type.is_open(cell::OPEN_NEG_X) && dst_cell_type.is_open(cell::OPEN_POS_X)
+        }
+        IVec3::NEG_Y => {
+            src_cell_type.is_open(cell::OPEN_NEG_Y) && dst_cell_type.is_open(cell::OPEN_POS_Y)
+        }
+        IVec3::NEG_Z => {
+            src_cell_type.is_open(cell::OPEN_NEG_Z) && dst_cell_type.is_open(cell::OPEN_POS_Z)
+        }
+        _ => false,
+    };
+    println!("{src_cell_indices:?} + {move_direction:?}) => {dst_cell_indices:?} => {src_cell_type:?} => {dst_cell_type:?} => {result}");
+    result
+}
+
+fn calculate_move_direction_from_direction_vector(forward: Direction3d) -> IVec3 {
+    // TODO: the below will fail if the direction is equivalent in multiple axis but for now since we are not
+    // interpolating/slerping it will just move in a straight line
+    (*forward / forward.abs().max_element()).as_ivec3()
+}
+
+fn calculate_destination_cell_indices_from_move_direction(
+    src_cell_indices: IVec3,
+    move_direction: IVec3,
+) -> IVec3 {
+    src_cell_indices + move_direction
 }

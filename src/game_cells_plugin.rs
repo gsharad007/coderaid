@@ -16,6 +16,7 @@ pub mod cell {
     pub const OPEN_POS_Y: Type = Type(0b1 << 3);
     pub const OPEN_NEG_Z: Type = Type(0b1 << 4);
     pub const OPEN_POS_Z: Type = Type(0b1 << 5);
+    pub const OPEN_ALL: Type = Type(0b111_111); // OPEN_NEG_X | OPEN_POS_X | OPEN_NEG_Y | OPEN_POS_Y | OPEN_NEG_Z | OPEN_POS_Z;
 
     impl Type {
         /// Checks if the given direction is open.
@@ -94,26 +95,33 @@ impl Cells {
     }
 
     #[allow(clippy::cast_sign_loss)]
-    pub fn get(&self, coords: IVec3) -> Option<&cell::Type> {
-        if coords.x >= 0
-            && coords.x < self.size.x
-            && coords.y >= 0
-            && coords.y < self.size.y
-            && coords.z >= 0
-            && coords.z < self.size.z
-            && (coords.z as usize) < self.array.len()
-            && (coords.y as usize) < self.array.get(coords.z as usize)?.len()
-            && (coords.x as usize)
+    pub fn get(&self, indices: IVec3) -> Option<&cell::Type> {
+        if indices.x >= 0
+            && indices.x < self.size.x
+            && indices.y >= 0
+            && indices.y < self.size.y
+            && indices.z >= 0
+            && indices.z < self.size.z
+            && (indices.z as usize) < self.array.len()
+            && (indices.y as usize) < self.array.get(indices.z as usize)?.len()
+            && (indices.x as usize)
                 < self
                     .array
-                    .get(coords.z as usize)?
-                    .get(coords.y as usize)?
+                    .get(indices.z as usize)?
+                    .get(indices.y as usize)?
                     .len()
         {
-            self.array.get(coords.z as usize)?.get(coords.y as usize)?.get(coords.x as usize)
+            self.array
+                .get(indices.z as usize)?
+                .get(indices.y as usize)?
+                .get(indices.x as usize)
         } else {
             None
         }
+    }
+
+    pub fn get_or_open_all(&self, coords: IVec3) -> cell::Type {
+        self.get(coords).copied().unwrap_or(cell::OPEN_ALL)
     }
 }
 

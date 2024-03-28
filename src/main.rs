@@ -1,3 +1,6 @@
+// #![feature(derive_const)]
+// #![feature(const_trait_impl)]
+
 mod ibounds3;
 
 mod game_bots_plugin;

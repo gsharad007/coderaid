@@ -1,5 +1,5 @@
 use core::f32::consts::FRAC_PI_2;
-use derive_more::{Add, Sub};
+use derive_more::{Add, Display, Sub};
 
 use bevy::{
     math::{IVec3, Quat, Vec3},
@@ -8,7 +8,8 @@ use bevy::{
 
 use crate::ibounds3::IBounds3;
 
-#[derive(Debug, Clone, Copy, Add, Sub)]
+#[derive(Display, Debug, Clone, Copy, Add, Sub)]
+#[display(fmt = "[{x} {y} {z}]")]
 pub struct CellCoords {
     x: i32,
     y: i32,
@@ -66,7 +67,7 @@ impl CellCoords {
     /// assert_eq!(ivec, IVec3::new(1, 2, 3));
     /// ```
     #[inline]
-    pub fn as_cell_indices(&self, bounds: IBounds3) -> IVec3 {
+    pub fn as_cell_indices(&self, bounds: &IBounds3) -> IVec3 {
         debug_assert!(
             self.as_ivec3().cmpge(bounds.min).all() && self.as_ivec3().cmple(bounds.max).all(),
             "CellCoords {self:?} is out of bounds {bounds:?}"
@@ -111,7 +112,7 @@ impl From<CellCoords> for IVec3 {
 // const CELLS_POSITION_AXIS_ORIENTATION: IVec3 = IVec3::new(1, -1, -1);
 
 pub const CELL_SIZE: f32 = 1.0; // Assuming the cell size is 1 unit
-// const CELL_VISUAL_OFFSET: Vec3 = Vec3::new(0.5, -0.5, 0.5);
+                                // const CELL_VISUAL_OFFSET: Vec3 = Vec3::new(0.5, -0.5, 0.5);
 
 // #[derive(Debug, Clone, Copy, Add, Sub, Neg)]
 // pub struct AxisOrientedCellCoords {

@@ -277,6 +277,15 @@ fn update_navigation_level2_component(
             move_direction,
         );
         if can_move_to_cell(src_cell_indices, dst_cell_indices, cells) {
+            // Only do this for direction change
+            if idx == 0 { break; }
+
+            // HACK: temp hack to center the bot on the current cell to avoid collisions and off directions
+            let game_coords =
+                CellCoords::from_cell_indices(src_cell_indices, bounds).as_game_coordinates();
+            transform.translation = game_coords;
+            // HACK: END
+
             let up = transform.up();
             let dst_cell_coords =
                 CellCoords::from_cell_indices(dst_cell_indices, bounds).as_game_coordinates();
@@ -284,7 +293,7 @@ fn update_navigation_level2_component(
             let to = (dst_cell_direction / 4.) + move_direction.as_vec3();
             transform.look_to(to, *up);
 
-            println!("[{idx}] world_pos: {game_coords} => src: {src_cell_coords} => src_cell_indices: {src_cell_indices}, direction: {direction:?} => move_direction: {move_direction} => dst_cell_indices: {dst_cell_indices} => look_to: {dst_cell_direction}");
+            // println!("[{idx}] world_pos: {game_coords} => src: {src_cell_coords} => src_cell_indices: {src_cell_indices}, direction: {direction:?} => move_direction: {move_direction} => dst_cell_indices: {dst_cell_indices} => look_to: {dst_cell_direction}");
 
             break;
         }
@@ -348,7 +357,7 @@ fn can_move_in_direction(src_cell_indices: IVec3, move_direction: IVec3, cells: 
         }
         _ => false,
     };
-    println!("{src_cell_indices:?} + {move_direction:?}) => {dst_cell_indices:?} => {src_cell_type:?} => {dst_cell_type:?} => {result}");
+    // println!("{src_cell_indices:?} + {move_direction:?}) => {dst_cell_indices:?} => {src_cell_type:?} => {dst_cell_type:?} => {result}");
     result
 }
 
